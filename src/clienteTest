@@ -1,0 +1,25 @@
+<Cliente>
+	<Conexion>
+		<Ip>127.0.0.1</Ip>
+		<Puerto>8080</Puerto>
+	</Conexion>
+	<Mensajes>
+		<Mensaje>
+			<Id>"1"</Id>
+			<Tipo>"string"</Tipo>
+			<Valor>"gustavo"</Valor>
+		</Mensaje>
+
+		<Mensaje>
+			<Id>"2"</Id>
+			<Tipo>"string"</Tipo>
+			<Valor>"adrian"</Valor>
+		</Mensaje>
+
+		<Mensaje>
+			<Id>"3"</Id>
+			<Tipo>"string"</Tipo>
+			<Valor>"gimenez"</Valor>
+		</Mensaje>
+	</Mensajes>
+</Cliente>

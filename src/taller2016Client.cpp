@@ -7,14 +7,12 @@
 #include <stdio.h>
 #include <sys/unistd.h>
 #include <string.h>
+#include "XmlParser.h"
+#include "CargadorXML.h"
+
 #define MAXHOSTNAME 256
 using namespace std;
 
-struct clientMsj {
-	int id;
-	char type[20];
-	char value[20];
-};
 
 int initializeClient(string destinationIp, int port) {
 	struct sockaddr_in remoteSocketInfo;
@@ -67,15 +65,26 @@ int write_socket(int destinationSocket, void *buf, int len) {
 	return currentsize;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+	if(argc!=2){
+		cout<<"Falta escribir el nombre del archvo!"<<endl;
+		return -1;
+	}
 
 	//genero un mensaje de prueba para enviar al server
 	clientMsj testMsj = { };
-	testMsj.id = 10;
+	strcpy(testMsj.id, "10");
 	strcpy(testMsj.type, "mensaje de prueba");
 	strcpy(testMsj.value, "avanzar nave");
+	CargadorXML cargador;
+	cargador.cargarServidor(argv[1]);
+	XmlParser parser(cargador.getDocumento());
+	string ip;
+	int puerto;
+	parser.obtenerIp(ip);
+	parser.obtenerPuertoCl(puerto);	
 
-	int destinationSocket = initializeClient("127.0.0.1", 8080);
-	write_socket(destinationSocket, &testMsj, 44);
+	int destinationSocket = initializeClient(ip, puerto);
+	write_socket(destinationSocket, &testMsj, 60);
 
 }
