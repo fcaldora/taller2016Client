@@ -1,0 +1,4 @@
+<Servidor>
+    <CantidadMaximaClientes>7</CantidadMaximaClientes>
+    <Puerto>8080</Puerto>
+</Servidor>
