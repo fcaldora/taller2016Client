@@ -1,10 +1,26 @@
 #include "XmlParser.h"
 
-XmlParser::XmlParser(TiXmlDocument* doc) {
+XmlParser::XmlParser(TiXmlDocument* doc, ofstream* archivoErrores) {
 	this->doc = doc;
+	this->archivoErrores = archivoErrores;
+	this->archivoErrores->open("erroresXml", ios_base::out);
 }
 
-void XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
+int XmlParser::cantidadMensajes(){
+	int contador = 0;
+	bool masMensajes = true;
+	TiXmlHandle docHandle(this->doc);
+	while(masMensajes){
+		TiXmlElement* msj = docHandle.FirstChild("Cliente").FirstChild("Mensajes").Child("Mensaje", contador).ToElement();
+		if(msj)
+			contador++;
+		else
+			masMensajes = false;
+	}
+	return contador;
+}
+
+int XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
 	TiXmlHandle docHandle(this->doc);
 	TiXmlElement* msj = docHandle.FirstChild("Cliente").FirstChild("Mensajes").Child("Mensaje", nroMensaje).ToElement();
 	if (msj){
@@ -17,8 +33,12 @@ void XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
 		string value(msj->FirstChild("Valor")->ToElement()->GetText());
 		memset(mensaje.value,0,LONGCHAR);
 		strncpy(mensaje.value, value.c_str(), value.size());
-	}else
-		cout<<"Error al obtener el mensaje";
+		return 0;
+	}else{
+		cout<<"Error al obtener el mensaje. XML mal escrito.";
+		*archivoErrores<<"Error al obtener el mensaje. Xml mal escrito."<<endl;
+		return -1;
+	}
 }
 
 void XmlParser::obtenerPuertoSv(int &puerto){
@@ -28,7 +48,7 @@ void XmlParser::obtenerPuertoSv(int &puerto){
 	if(puertoElem)
 		puerto = atoi(puertoElem->GetText());
 	else
-		cout<<"Error al obtener el puerto";
+		cout<<"Error al obtener el puerto. XML mal escrito.";
 }
 
 void XmlParser::obtenerPuertoCl(int &puerto){
@@ -37,8 +57,11 @@ void XmlParser::obtenerPuertoCl(int &puerto){
 
 	if(puertoElem)
 		puerto = atoi(puertoElem->GetText());
-	else
-		cout<< "Error al obtener el puerto";
+	else{
+		cout<< "Error al obtener el puerto. XML mal escrito.";
+		*archivoErrores<<"Error al obtener el puerto. XML mal escrito."<<endl;
+		puerto = PUERTO_PREDEF;
+	}
 
 }
 
@@ -48,8 +71,10 @@ void XmlParser::obtenerIp(string &ip){
 
 	if(ipElem)
 		ip = string(ipElem->GetText());
-	else
-		cout<<"Error al obtener la ip";
+	else{
+		cout<<"Error al obtener la ip. XML mal escrito.";
+		*archivoErrores<<"Error al obtener la ip. Xml mal escrito"<<endl;
+	}
 }
 
 void XmlParser::obtenerMaxClientes(int &maxClientes){

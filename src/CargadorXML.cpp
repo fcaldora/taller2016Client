@@ -6,7 +6,7 @@
 #define PUERTO "8080"
 
 CargadorXML::CargadorXML() {
-	this->archivoErrores.open("ErroresArchivoXML", ios_base::app);
+	this->archivoErrores.open("ErroresNombreXML", ios_base::app);
 }
 
 void CargadorXML::cargarServidor(string nombreArchivo){
