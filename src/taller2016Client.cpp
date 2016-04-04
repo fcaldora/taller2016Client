@@ -217,14 +217,14 @@ int checkIp(string ip, ofstream* archivoErrores){
 }
 
 int main(int argc, char* argv[]) {
-	if(argc!=2){
-		cout<<"Falta escribir el nombre del archvo!"<<endl;
-		return -1;
-	}
+	//if(argc!=2){
+	//	cout<<"Falta escribir el nombre del archvo!"<<endl;
+	//	return -1;
+	//}
 	CargadorXML cargador;
 
-	//cargador.cargarServidor("clienteTest.txt");
-	cargador.cargarServidor(argv[1]);
+	cargador.cargarServidor("clienteTest.txt");
+	//cargador.cargarServidor(argv[1]);
 	ofstream erroresXml; //Log de errores de mala escritura del XML.
 	ofstream erroresConexion;
 	erroresConexion.open("ErroresConexion",ios_base::app);
@@ -251,6 +251,7 @@ int main(int argc, char* argv[]) {
 	bool fin = false;
 	while (!fin){
 		cin>>opcion;
+		clientMsj disconnection, response;
 		switch(opcion){
 			case 1:
 				destinationSocket = initializeClient(ip, puerto, &erroresConexion);
@@ -258,12 +259,16 @@ int main(int argc, char* argv[]) {
 				printMenu(messagesList);
 				break;
 			case 2:
+				strncpy(disconnection.id, "1", sizeof(disconnection.id) - 1);
+				strncpy(disconnection.type, "String", sizeof(disconnection.type) - 1);
+				strncpy(disconnection.value, "Disconnection", sizeof(disconnection.value) - 1);
+				write_socket(destinationSocket, &disconnection, sizeof(disconnection), &erroresConexion);
+				readBlock(destinationSocket, &response, sizeof(response), &erroresConexion);
 				close(destinationSocket);
 				printMenu(messagesList);
 				break;
 			case 3:
 				fin = true;
-				clientMsj disconnection, response;
 				strncpy(disconnection.id, "1", sizeof(disconnection.id) - 1);
 				strncpy(disconnection.type, "String", sizeof(disconnection.type) - 1);
 				strncpy(disconnection.value, "Disconnection", sizeof(disconnection.value) - 1);
