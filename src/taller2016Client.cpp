@@ -158,6 +158,24 @@ int readMsj(int socket, int bytesARecibir, ofstream* archivoErrores){
 	return 0;
 }
 
+int readBlock(int fd, void* buffer, int len, ofstream* archivoErrores) {
+	int ret = 0;
+	int count = 0;
+	while (count < len) {
+		ret = read(fd, buffer + count, 1);
+		if (ret <= 0) {
+			*archivoErrores<<"Error al recibir mensaje"<<endl;
+			return (-1);
+		}else if(ret == 0){//se corto la conexion desde el lado del servidor.
+			close(fd);
+			*archivoErrores<<"Se cerro la conexion con el servidor"<<endl;
+			return -1;
+		}
+		count += 1;
+	}
+	return count;
+}
+
 void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser parser){
 	int cantidadMensajes = parser.cantidadMensajes();
 	int contador;
@@ -245,17 +263,24 @@ int main(int argc, char* argv[]) {
 				break;
 			case 3:
 				fin = true;
+				clientMsj disconnection, response;
+				strncpy(disconnection.id, "1", sizeof(disconnection.id) - 1);
+				strncpy(disconnection.type, "String", sizeof(disconnection.type) - 1);
+				strncpy(disconnection.value, "Disconnection", sizeof(disconnection.value) - 1);
+				write_socket(destinationSocket, &disconnection, sizeof(disconnection), &erroresConexion);
+				readBlock(destinationSocket, &response, sizeof(response), &erroresConexion);
 				close(destinationSocket);
 				break;
 			default:
 				if(opcion > messagesList.size() + 3){
 					cout <<"Opcion incorrecta"<<endl;
 				}else{
-					clientMsj mensaje;
+					clientMsj mensaje, response;
 					parser.obtenerMensaje(mensaje, opcion - 4);
 					int msjLength = sizeof(mensaje);
 					write_socket(destinationSocket, &mensaje, msjLength, &erroresConexion);
-					readMsj(destinationSocket, 60, &erroresConexion);
+					readBlock(destinationSocket, &response, sizeof(response),  &erroresConexion);
+					cout << response.value << endl;
 				}
 				printMenu(messagesList);
 		}
