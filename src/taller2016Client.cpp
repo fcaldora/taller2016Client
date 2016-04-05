@@ -13,6 +13,8 @@
 #include <pthread.h>
 
 #define MAXHOSTNAME 256
+#define kClientTestFile "clienteTest.txt"
+
 using namespace std;
 
 list<clientMsj*> messagesList;
@@ -21,22 +23,6 @@ pthread_t clientThreadID[3];
 struct thread_args {
     int socketConnection;
 }args;
-
-/*int readBlock(int fd, void* buffer, int len) {
-	int ret = 0;
-	int count = 0;
-	while (count < len) {
-		ret = read(fd, buffer + count, 1);
-		if (ret == 0) {
-			return 0;
-		}
-		if (ret < 0){
-			return -1;
-		}
-		count += 1;
-	}
-	return count;
-}*/
 
 //Esta funcion va en la opcion del menu que dice "conectar".
 int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
@@ -92,36 +78,6 @@ int write_socket(int destinationSocket, void *buf, int len, ofstream* archivoErr
 	}
 	return currentsize;
 }
-
-/*void* readServerMessages(void* parameter){
-	int socketConnection = args.socketConnection;
-	while(1) {
-		clientMsj msj = { };
-		int result = readBlock(socketConnection, &msj, 60);
-		if (result == 0){
-			// error or eof
-			cout << "EOF";
-		}
-		if (result < 0){
-			cout << "ERROR";
-			// error
-		}
-	}
-}*/
-
-/*void* readMsjs(void *param) {
-	clientMsj clientMessage = { };
-	while (1) {
-		if (!messagesList.empty()) {
-			clientMessage = messagesList.front();
-			cout << clientMessage.id << endl;
-			cout << clientMessage.value << endl;
-			cout << clientMessage.type << endl;
-			messagesList.pop_front();
-		}
-	}
-	return 0;
-}*/
 
 void printMenu(list<clientMsj*> listaMensajes){
 	cout<<"1. Conectar"<<endl;
@@ -186,20 +142,6 @@ void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser parser){
 	}
 }
 
-/*void initThreadForReadingFromSocket(int socketConnection) {
-	thread_args args;
-	args.socketConnection = socketConnection;
-	int error = pthread_create(&(clientThreadID[3]), NULL, &readServerMessages, &args);
-	if (error != 0)
-			printf("\ncan't create thread :[%s]", strerror(error));
-}
-
-void initThreadForReadingMessages(){
-	int error = pthread_create(&(clientThreadID[2]), NULL, &readMsjs, NULL);
-	if (error != 0)
-		printf("\ncan't create thread :[%s]", strerror(error));
-}*/
-
 int checkPuerto(int puerto, ofstream* archivoErrores){
 	if(puerto<1025 || puerto>65536){
 		*archivoErrores<<"El puerto "<<puerto<<" no es válido."<<endl;
@@ -217,35 +159,40 @@ int checkIp(string ip, ofstream* archivoErrores){
 }
 
 int main(int argc, char* argv[]) {
-	//if(argc!=2){
-	//	cout<<"Falta escribir el nombre del archvo!"<<endl;
-	//	return -1;
-	//}
-	CargadorXML cargador;
+	const char *fileName;
+	XMLLoader *xmlLoader = new XMLLoader();
 
-	cargador.cargarServidor("clienteTest.txt");
-	//cargador.cargarServidor(argv[1]);
+	if(argc != 2){
+		fileName = kClientTestFile;
+		cout<<"Falta escribir el nombre del archivo, se usara uno por defecto."<<endl;
+	} else {
+		fileName = argv[1];
+		//if (!xmlLoader->serverXMLIsValid(fileName)){
+			//fileName = kServerTestFile;
+		//}
+	}
+
+	xmlLoader->cargarServidor("clienteTest.txt");
+
 	ofstream erroresXml; //Log de errores de mala escritura del XML.
 	ofstream erroresConexion;
 	erroresConexion.open("ErroresConexion",ios_base::app);
 	ofstream erroresDatos;
 	erroresDatos.open("erroresEnDatos",ios_base::app);
-	XmlParser parser(cargador.getDocumento(), &erroresXml);
-	string ip;
-	int puerto;
-	parser.obtenerIp(ip);
-	parser.obtenerPuertoCl(puerto);
+	XmlParser parser(xmlLoader->getDocumento(), &erroresXml);
+	string ip = parser.getIP();
+	int port = parser.getClientPort();
+
 	//Chequeo si los datos estan bien. Si estan mal, cargo un xml por defecto.
-	if(checkIp(ip, &erroresDatos)<0 || checkPuerto(puerto, &erroresDatos)<0){
-		cargador.cargarServidor("clienteTest");
-		XmlParser parser(cargador.getDocumento(), &erroresXml);
-		parser.obtenerIp(ip);
-		parser.obtenerPuertoCl(puerto);
+	if(checkIp(ip, &erroresDatos)<0 || checkPuerto(port, &erroresDatos)<0){
+		xmlLoader->cargarServidor("clienteTest");
+		XmlParser parser(xmlLoader->getDocumento(), &erroresXml);
+		ip = parser.getIP();
+		port = parser.getClientPort();
 	}
 	cargarMensajes(messagesList, parser);
 	int destinationSocket;
-	//initThreadForReadingFromSocket(destinationSocket);
-	//initThreadForReadingMessages();
+
 	printMenu(messagesList);
 	unsigned int opcion;
 	bool fin = false;
@@ -254,7 +201,7 @@ int main(int argc, char* argv[]) {
 		clientMsj disconnection, response;
 		switch(opcion){
 			case 1:
-				destinationSocket = initializeClient(ip, puerto, &erroresConexion);
+				destinationSocket = initializeClient(ip, port, &erroresConexion);
 				//avisar si se conecto bien o no.
 				printMenu(messagesList);
 				break;
@@ -291,6 +238,8 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
+
+	delete xmlLoader;
 	cout << "EXIT_SUCCESS"<<endl;
 	return EXIT_SUCCESS;
 }

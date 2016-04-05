@@ -8,17 +8,17 @@
 
 using namespace std;
 
-class CargadorXML {
+class XMLLoader {
 public:
-	CargadorXML();
+	XMLLoader();
 	void cargarServidor(string nombreArchivo);
 	void cargarCliente(string nombreArchivo);
 	TiXmlDocument* getDocumento();
-	virtual ~CargadorXML();
+	virtual ~XMLLoader();
 
 private:
-	TiXmlDocument archivo;
-	ofstream archivoErrores;
+	TiXmlDocument xmlDocument;
+	ofstream errorLogFile;
 };
 
 #endif /* CARGADORXML_H_ */

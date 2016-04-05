@@ -23,10 +23,10 @@ public:
 	virtual ~XmlParser();
 	int cantidadMensajes();
 	int obtenerMensaje(clientMsj &mensaje, int nroMensaje);
-	void obtenerPuertoSv(int &puerto);
-	void obtenerPuertoCl(int &puerto);
-	void obtenerIp(string &ip);
-	void obtenerMaxClientes(int &maxClientes);
+	void getServerPort(int &puerto);
+	int getClientPort();
+	string getIP();
+	void getMaxNumberOfClients(int &maxClientes);
 private:
 	TiXmlDocument* doc;
 	ofstream* archivoErrores;

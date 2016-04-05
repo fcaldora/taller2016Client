@@ -5,15 +5,15 @@
 #define IP "127.0.0.1"
 #define PUERTO "8080"
 
-CargadorXML::CargadorXML() {
-	this->archivoErrores.open("ErroresNombreXML", ios_base::app);
+XMLLoader::XMLLoader() {
+	this->errorLogFile.open("ErroresNombreXML", ios_base::app);
 }
 
-void CargadorXML::cargarServidor(string nombreArchivo){
-	if(!this->archivo.LoadFile(nombreArchivo.c_str()))
+void XMLLoader::cargarServidor(string nombreArchivo){
+	if(!this->xmlDocument.LoadFile(nombreArchivo.c_str()))
 	{
 		//Escribo en el file de errores.
-		this->archivoErrores <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
+		this->errorLogFile <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
 		//abro un archivo nuevo con valores estander.
 		TiXmlDocument archivoNuevo;
 		TiXmlElement* servidor = new TiXmlElement("Servidor");
@@ -28,15 +28,15 @@ void CargadorXML::cargarServidor(string nombreArchivo){
 		servidor->LinkEndChild(puerto);
 
 		archivoNuevo.SaveFile(nombreArchivo.c_str());
-		this->archivo.LoadFile(nombreArchivo.c_str());
+		this->xmlDocument.LoadFile(nombreArchivo.c_str());
 	}
 }
 
-void CargadorXML::cargarCliente(string nombreArchivo){
-	if(!this->archivo.LoadFile(nombreArchivo.c_str()))
+void XMLLoader::cargarCliente(string nombreArchivo){
+	if(!this->xmlDocument.LoadFile(nombreArchivo.c_str()))
 		{
 			//Escribo en el file de errores.
-			this->archivoErrores <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
+			this->errorLogFile <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
 			//abro un archivo nuevo con valores estander.
 			TiXmlDocument archivoNuevo;
 			TiXmlElement* cliente = new TiXmlElement("Cliente");
@@ -69,17 +69,17 @@ void CargadorXML::cargarCliente(string nombreArchivo){
 			mensajes->LinkEndChild(mensajeUno);
 			cliente->LinkEndChild(mensajes);
 			archivoNuevo.SaveFile(nombreArchivo.c_str());
-			this->archivo.LoadFile(nombreArchivo.c_str());
+			this->xmlDocument.LoadFile(nombreArchivo.c_str());
 		}else{
 			cout<<"carga exitosa\n";
 	}
 }
 
-TiXmlDocument* CargadorXML::getDocumento(){
-	return (&this->archivo);
+TiXmlDocument* XMLLoader::getDocumento(){
+	return (&this->xmlDocument);
 }
 
-CargadorXML::~CargadorXML() {
-	this->archivo.Clear();
-	this->archivoErrores.close();
+XMLLoader::~XMLLoader() {
+	this->xmlDocument.Clear();
+	this->errorLogFile.close();
 }

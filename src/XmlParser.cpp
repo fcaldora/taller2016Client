@@ -41,7 +41,7 @@ int XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
 	}
 }
 
-void XmlParser::obtenerPuertoSv(int &puerto){
+void XmlParser::getServerPort(int &puerto){
 	TiXmlHandle docHandle(this->doc);
 	TiXmlElement* puertoElem = docHandle.FirstChild("Servidor").FirstChild("Puerto").ToElement();
 
@@ -51,33 +51,33 @@ void XmlParser::obtenerPuertoSv(int &puerto){
 		cout<<"Error al obtener el puerto. XML mal escrito.";
 }
 
-void XmlParser::obtenerPuertoCl(int &puerto){
+int XmlParser::getClientPort() {
 	TiXmlHandle docHandle(this->doc);
 	TiXmlElement* puertoElem = docHandle.FirstChild("Cliente").FirstChild("Conexion").FirstChild("Puerto").ToElement();
 
 	if(puertoElem)
-		puerto = atoi(puertoElem->GetText());
+		return atoi(puertoElem->GetText());
 	else{
 		cout<< "Error al obtener el puerto. XML mal escrito.";
 		*archivoErrores<<"Error al obtener el puerto. XML mal escrito."<<endl;
-		puerto = PUERTO_PREDEF;
+		return PUERTO_PREDEF;
 	}
-
 }
 
-void XmlParser::obtenerIp(string &ip){
+string XmlParser::getIP(){
 	TiXmlHandle docHandle(this->doc);
 	TiXmlElement* ipElem = docHandle.FirstChild("Cliente").FirstChild("Conexion").FirstChild("Ip").ToElement();
 
 	if(ipElem)
-		ip = string(ipElem->GetText());
+		return string(ipElem->GetText());
 	else{
 		cout<<"Error al obtener la ip. XML mal escrito.";
 		*archivoErrores<<"Error al obtener la ip. Xml mal escrito"<<endl;
+		return "";
 	}
 }
 
-void XmlParser::obtenerMaxClientes(int &maxClientes){
+void XmlParser::getMaxNumberOfClients(int &maxClientes){
 	TiXmlHandle docHandle(this->doc);
 	TiXmlElement* maxElem = docHandle.FirstChild("Servidor").FirstChild("CantidadMaximaClientes").ToElement();
 
