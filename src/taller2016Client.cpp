@@ -10,6 +10,7 @@
 #include "XmlParser.h"
 #include "CargadorXML.h"
 #include <list>
+#include <sys/time.h>
 #include <pthread.h>
 #include "ErrorLogsWriter.h"
 
@@ -73,46 +74,55 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 		*archivoErrores<<"Error. Puerto "<<portNumber<<" inválido."<<endl;
 		prepareForExit(xmlLoader, parser, erroLogsWriter, "CONNECT FAILURE");
 		exit(EXIT_FAILURE);
+	}else{
+		cout<<"Connected!"<<endl;
 	}
 
 	return socketHandle;
 }
 
-int write_socket(int destinationSocket, void *buf, int len, ofstream* archivoErrores) {
-	int currentsize = 0;
-	int count = 0;
-	while (currentsize < len) {
-		count = write(destinationSocket, buf + currentsize, 1);
-		if (count < 0){
+int sendMsj(int socket, string buffer){
+	uint32_t enviados = 0;
+	int res = 0;
+	uint32_t bytesAEnviar = (buffer.size());
+	//Envio la longitud del mensaje primero.
+	res = send(socket, &bytesAEnviar, sizeof(uint32_t), MSG_WAITALL);
+	while(enviados<bytesAEnviar){
+		res = send(socket, &(buffer.c_str())[enviados], bytesAEnviar - enviados, MSG_WAITALL);
+		if (res == 0){ //Se cerró la conexion. Escribir en log de errores de conexion.
+			return 0;
+		}else if(res<0){ //Error en el envio del mensaje. Escribir en el log.
 			return -1;
-			*archivoErrores<<"Error al enviar mensaje."<<endl;
+		}else{
+			enviados += res;
 		}
-		currentsize += 1;
 	}
-	return currentsize;
+	return enviados;
 }
 
 void printMenu(list<clientMsj*> listaMensajes){
-	cout << endl << "Menu:" << endl;
 	cout<<"1. Conectar"<<endl;
 	cout<<"2. Desconectar"<<endl;
 	cout<<"3. Salir "<<endl;
+	cout<<"4. Ciclar"<<endl;
 	int i=0;
 	list<clientMsj*>::iterator iterador;
 	for (iterador = listaMensajes.begin(); iterador != listaMensajes.end(); iterador++){
-		cout<< i+4 <<". Enviar mensaje "<<(*iterador)->id<<endl;
+		cout<< i+5 <<". Enviar mensaje "<<(*iterador)->id<<endl;
 		i++;
 	}
-	cout << "Ingresar opcion:" ;
+	cout<<"Ingresar opcion: ";
 }
 
-int readMsj(int socket, int bytesARecibir, ofstream* archivoErrores){
-	int totalBytesRecibidos = 0;
+int readMsj(int socket, ofstream* archivoErrores){
+	uint32_t totalBytesRecibidos = 0;
 	int recibidos = 0;
-	int tamBuffer = bytesARecibir;
+	uint32_t numBytes;
+	recv(socket, &numBytes, sizeof(uint32_t), MSG_WAITALL);
+	int tamBuffer = numBytes;
 	char buffer[tamBuffer];
 	memset(buffer,0,tamBuffer);
-	while (totalBytesRecibidos < bytesARecibir){
+	while (totalBytesRecibidos < numBytes){
 		recibidos = recv(socket, &buffer[totalBytesRecibidos], tamBuffer - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			*archivoErrores<<"Error al recibir mensaje"<<endl;
@@ -126,25 +136,7 @@ int readMsj(int socket, int bytesARecibir, ofstream* archivoErrores){
 		}
 	}
 	cout<<buffer<<endl;
-	return 0;
-}
-
-int readBlock(int fd, void* buffer, int len, ofstream* archivoErrores) {
-	int ret = 0;
-	int count = 0;
-	while (count < len) {
-		ret = read(fd, buffer + count, 1);
-		if (ret <= 0) {
-			*archivoErrores<<"Error al recibir mensaje"<<endl;
-			return (-1);
-		}else if(ret == 0){//se corto la conexion desde el lado del servidor.
-			close(fd);
-			*archivoErrores<<"Se cerro la conexion con el servidor"<<endl;
-			return -1;
-		}
-		count += 1;
-	}
-	return count;
+	return 1;
 }
 
 void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
@@ -155,6 +147,31 @@ void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
 		parser->getMessage(*mensaje, contador);
 		listaMensajes.push_back(mensaje);
 	}
+}
+
+void ciclar(int socket, int milisegundos, XmlParser *parser, ofstream* erroresConexion){
+	struct timeval tiempoInicial, tiempoActual;
+	bool fin = false;
+	int contador = 0;
+	int cantidadMensajesEnviados = 0;
+	long double cantidadMilisegundosActual;
+	gettimeofday(&tiempoInicial, NULL);
+	long double cantidadMilisegundosFinal = (tiempoInicial.tv_sec * 1000) + milisegundos;
+	while(!fin){
+		clientMsj mensaje;
+		parser->getMessage(mensaje, contador);
+		sendMsj(socket,mensaje.value);
+		cantidadMensajesEnviados++;
+		contador++;
+		if(contador == parser->cantidadMensajes())
+			contador = 0;
+		gettimeofday(&tiempoActual, NULL);
+		cantidadMilisegundosActual = tiempoActual.tv_sec*1000;
+		if( cantidadMilisegundosActual >= cantidadMilisegundosFinal){
+			fin = true;
+		}
+	}
+	cout<<"Cantidad total de mensajes enviados: "<<cantidadMensajesEnviados<<endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -187,43 +204,43 @@ int main(int argc, char* argv[]) {
 	printMenu(messagesList);
 	unsigned int opcion;
 	bool fin = false;
+	string msjDisconnection("Disconnection");
 	while (!fin){
 		cin>>opcion;
-		clientMsj disconnection, response;
 		switch(opcion){
 			case 1:
 				destinationSocket = initializeClient(serverIP, serverPort, &erroresConexion);
-				//avisar si se conecto bien o no.
 				printMenu(messagesList);
 				break;
 			case 2:
-				strncpy(disconnection.id, "1", sizeof(disconnection.id) - 1);
-				strncpy(disconnection.type, "String", sizeof(disconnection.type) - 1);
-				strncpy(disconnection.value, "Disconnection", sizeof(disconnection.value) - 1);
-				write_socket(destinationSocket, &disconnection, sizeof(disconnection), &erroresConexion);
-				readBlock(destinationSocket, &response, sizeof(response), &erroresConexion);
+				sendMsj(destinationSocket, msjDisconnection);
+				readMsj(destinationSocket, &erroresConexion);
 				close(destinationSocket);
 				printMenu(messagesList);
 				break;
 			case 3:
 				fin = true;
-				strncpy(disconnection.id, "1", sizeof(disconnection.id) - 1);
-				strncpy(disconnection.type, "String", sizeof(disconnection.type) - 1);
-				strncpy(disconnection.value, "Disconnection", sizeof(disconnection.value) - 1);
-				write_socket(destinationSocket, &disconnection, sizeof(disconnection), &erroresConexion);
-				readBlock(destinationSocket, &response, sizeof(response), &erroresConexion);
+				sendMsj(destinationSocket, msjDisconnection);
+				readMsj(destinationSocket, &erroresConexion);
 				close(destinationSocket);
 				break;
+			case 4:
+				//Ciclar.
+				cout<<"Indicar cantidad de milisegundos: "<<endl;
+				int milisegundos;
+				cin>>milisegundos;
+				ciclar(destinationSocket, milisegundos, parser, &erroresConexion);
+				printMenu(messagesList);
+				break;
 			default:
-				if(opcion > messagesList.size() + 3){
+				if(opcion > messagesList.size() + 4){
 					cout <<"Opcion incorrecta"<<endl;
 				}else{
-					clientMsj mensaje, response;
-					parser->getMessage(mensaje, opcion - 4);
-					int msjLength = sizeof(mensaje);
-					write_socket(destinationSocket, &mensaje, msjLength, &erroresConexion);
-					readBlock(destinationSocket, &response, sizeof(response),  &erroresConexion);
-					cout << response.value << endl;
+					clientMsj mensaje;
+					parser->getMessage(mensaje, opcion - 5);
+					sendMsj(destinationSocket, string(mensaje.value));
+					cout<<"mensaje enviado: "<<mensaje.value<<endl;
+					readMsj(destinationSocket, &erroresConexion);
 				}
 				printMenu(messagesList);
 		}

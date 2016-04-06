@@ -24,6 +24,7 @@ public:
 	int getNumberOfMessages();
 	int getMessage(clientMsj &mensaje, int nroMensaje);
 	int getServerPort();
+	int cantidadMensajes();
 	string getServerIP();
 
 private:

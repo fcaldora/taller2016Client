@@ -72,6 +72,20 @@ string XmlParser::getServerIP(){
 	}
 }
 
+int XmlParser::cantidadMensajes(){
+	int contador = 0;
+	bool masMensajes = true;
+	TiXmlHandle docHandle(&this->doc);
+	while(masMensajes){
+		TiXmlElement* msj = docHandle.FirstChild(kClientTag).FirstChild(kMessagesTag).Child(kMessageTag, contador).ToElement();
+		if(msj)
+			contador++;
+		else
+			masMensajes = false;
+	}
+	return contador;
+}
+
 XmlParser::~XmlParser() {
 	// TODO Auto-generated destructor stub
 }
