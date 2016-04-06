@@ -1,85 +1,158 @@
 #include "CargadorXML.h"
 
-//Constantes para crear el archivo en caso de que no exista.
-#define MAXCLIENTES "7"
-#define IP "127.0.0.1"
-#define PUERTO "8080"
+#include <iostream>
+#include <sstream>
+#include <arpa/inet.h>
+#include "Constants.h"
 
 XMLLoader::XMLLoader() {
-	this->errorLogFile.open("ErroresNombreXML", ios_base::app);
+
 }
 
-void XMLLoader::cargarServidor(string nombreArchivo){
-	if(!this->xmlDocument.LoadFile(nombreArchivo.c_str()))
-	{
-		//Escribo en el file de errores.
-		this->errorLogFile <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
-		//abro un archivo nuevo con valores estander.
-		TiXmlDocument archivoNuevo;
-		TiXmlElement* servidor = new TiXmlElement("Servidor");
-		archivoNuevo.LinkEndChild(servidor);
-		TiXmlElement* maxClientes = new TiXmlElement("CantidadMaximaClientes");
-		servidor->LinkEndChild(maxClientes);
-		TiXmlText* cantidadClientes = new TiXmlText(MAXCLIENTES);
-		maxClientes->LinkEndChild(cantidadClientes);
-		TiXmlElement* puerto = new TiXmlElement("Puerto");
-		TiXmlText* numeroPuerto = new TiXmlText(PUERTO);
-		puerto->LinkEndChild(numeroPuerto);
-		servidor->LinkEndChild(puerto);
+bool XMLLoader::clientXMLIsValid(const char *fileName){
+	TiXmlDocument xmlFile(fileName);
 
-		archivoNuevo.SaveFile(nombreArchivo.c_str());
-		this->xmlDocument.LoadFile(nombreArchivo.c_str());
+	if(!xmlFile.LoadFile()) {
+		cout << "NOT LOAD FILE" << endl;
+		//this->errorLogWriter->writeNotFoundFileForNameError(fileName);
+		xmlFile.Clear();
+		return false;
 	}
-}
 
-void XMLLoader::cargarCliente(string nombreArchivo){
-	if(!this->xmlDocument.LoadFile(nombreArchivo.c_str()))
-		{
-			//Escribo en el file de errores.
-			this->errorLogFile <<"El archivo '"<<nombreArchivo<< "' no existe. Se creó un archivo con ese nombre.\n";
-			//abro un archivo nuevo con valores estander.
-			TiXmlDocument archivoNuevo;
-			TiXmlElement* cliente = new TiXmlElement("Cliente");
-			archivoNuevo.LinkEndChild(cliente);
-			TiXmlElement* conexion = new TiXmlElement("Conexion");
-			TiXmlElement* ipElem = new TiXmlElement("Ip");
-			TiXmlText* ip = new TiXmlText(IP);
-			ipElem->LinkEndChild(ip);
-			TiXmlElement* puertoElem = new TiXmlElement("Puerto");
-			TiXmlText* puerto = new TiXmlText(PUERTO);
-			puertoElem->LinkEndChild(puerto);
-			conexion->LinkEndChild(ipElem);
-			conexion->LinkEndChild(puertoElem);
-			cliente->LinkEndChild(conexion);
-
-			TiXmlElement* mensajes = new TiXmlElement("Mensajes");
-			TiXmlElement* mensajeUno = new TiXmlElement("Mensaje");
-			TiXmlElement* idElem = new TiXmlElement("Id");
-			TiXmlElement* tipoElem = new TiXmlElement("Tipo");
-			TiXmlElement* valorElem = new TiXmlElement("Valor");
-			TiXmlText* id = new TiXmlText("mensaje1");
-			TiXmlText* tipo = new TiXmlText("string");
-			TiXmlText* valor = new TiXmlText("Hola mundo");
-			idElem->LinkEndChild(id);
-			tipoElem->LinkEndChild(tipo);
-			valorElem->LinkEndChild(valor);
-			mensajeUno->LinkEndChild(idElem);
-			mensajeUno->LinkEndChild(tipoElem);
-			mensajeUno->LinkEndChild(valorElem);
-			mensajes->LinkEndChild(mensajeUno);
-			cliente->LinkEndChild(mensajes);
-			archivoNuevo.SaveFile(nombreArchivo.c_str());
-			this->xmlDocument.LoadFile(nombreArchivo.c_str());
-		}else{
-			cout<<"carga exitosa\n";
+	if (!clientXMLHasValidElements(xmlFile) || !clientXMLHasValidValues(xmlFile)) {
+		xmlFile.Clear();
+		return false;
 	}
+
+	xmlFile.Clear();
+	return true;
 }
 
-TiXmlDocument* XMLLoader::getDocumento(){
-	return (&this->xmlDocument);
+bool XMLLoader::clientXMLHasValidElements(TiXmlDocument xmlFile) {
+	TiXmlElement *client = xmlFile.FirstChildElement(kClientTag);
+	if (client == NULL){
+		cout << "client NULL" << endl;
+		//this->errorLogWriter->writeNotFoundElementInXML("Servidor");
+		return false;
+	}
+
+	TiXmlElement *connection = client->FirstChildElement(kConnectionTag);
+	if (connection == NULL) {
+		cout << "connection NULL" << endl;
+		//this->errorLogWriter->writeNotFoundElementInXML("CantidadMaximaClientes");
+		return false;
+	} else {
+		TiXmlElement *clientIP = connection->FirstChildElement(kIPTag);
+		if (clientIP == NULL){
+			cout << "client IP NULL" << endl;
+			return false;
+		}
+
+		TiXmlElement *clientPort = clientIP->NextSiblingElement(kPortTag);
+		if (clientPort == NULL){
+			cout << "client Port NULL" << endl;
+			return false;
+		}
+	}
+
+	TiXmlElement *messages = connection->NextSiblingElement(kMessagesTag);
+	if (messages == NULL) {
+		cout << "messages NULL" << endl;
+		//this->errorLogWriter->writeNotFoundElementInXML("Puerto");
+		return false;
+	}
+
+	TiXmlElement *firstMessage = messages->FirstChildElement(kMessageTag);
+	if (firstMessage == NULL){
+		cout << "first message NULL" << endl;
+
+		return false;
+	}
+
+	TiXmlElement *firstMessageID = firstMessage->FirstChildElement(kMessageIDTag);
+	if (firstMessageID == NULL) {
+		cout << "first message ID NULL" << endl;
+
+		return false;
+	}
+
+	TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
+	if (firstMessageType == NULL) {
+		cout << "first message type NULL" << endl;
+
+		return false;
+	}
+
+	TiXmlElement *firstMessageValue = firstMessageType->NextSiblingElement(kMessageValueTag);
+	if (firstMessageValue == NULL) {
+		cout << "first message value NULL" << endl;
+
+		return false;
+	}
+
+	for(TiXmlElement *message = firstMessage->NextSiblingElement(kMessageTag); message != NULL; message = message->NextSiblingElement(kMessageTag)) {
+		TiXmlElement *firstMessageID = firstMessage->FirstChildElement(kMessageIDTag);
+		if (firstMessageID == NULL) {
+			cout << "first message ID NULL" << endl;
+
+			return false;
+		}
+
+		TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
+		if (firstMessageType == NULL) {
+			cout << "first message type NULL" << endl;
+
+			return false;
+		}
+
+		TiXmlElement *firstMessageValue = firstMessageType->NextSiblingElement(kMessageValueTag);
+		if (firstMessageValue == NULL) {
+			cout << "first message value NULL" << endl;
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
+	TiXmlElement *connection = xmlFile.FirstChildElement(kClientTag)->FirstChildElement(kConnectionTag);
+	const char* clientIP = connection->FirstChildElement(kIPTag)->GetText();
+	struct sockaddr_in sa;
+	int success = inet_pton(AF_INET, clientIP, &(sa.sin_addr));
+	if (success != 1){
+		cout << "invalid IP" << endl;
+		return false;
+	}
+
+	const char *clientPort = connection->FirstChildElement(kIPTag)->NextSiblingElement(kPortTag)->GetText();
+	std::stringstream portStrValue;
+	portStrValue << clientPort;
+	unsigned int portIntValue;
+	portStrValue >> portIntValue;
+	if (portIntValue <= 0 || portIntValue > kMaxNumberOfValidPort) {
+		cout << "invalid Port" << endl;
+
+		//this->errorLogWriter->writeValueErrorForElementInXML("Puerto");
+		return false;
+	}
+
+	TiXmlElement *firstMessage = xmlFile.FirstChildElement(kClientTag)->FirstChildElement(kConnectionTag)->NextSiblingElement(kMessagesTag)->FirstChildElement(kMessageTag);
+	for(TiXmlElement *message = firstMessage; message != NULL; message = message->NextSiblingElement(kMessageTag)) {
+		const char *firstMessageType = message->FirstChildElement(kMesssageTypeTag)->GetText();
+		stringstream firstMessageTypeStreamString;
+		firstMessageTypeStreamString << firstMessageType;
+		string firstMessageTypeString = firstMessageTypeStreamString.str();
+		if ((firstMessageTypeString.compare(kMessageTypeInt) != 0) && (firstMessageTypeString.compare(kMessageTypeString) != 0) && (firstMessageTypeString.compare(kMessageTypeChar) != 0) && (firstMessageTypeString.compare(kMessageTypeDouble) != 0)) {
+			cout << "invalid Message Type" << endl;
+			return false;
+		}
+	}
+
+	return true;
 }
 
 XMLLoader::~XMLLoader() {
-	this->xmlDocument.Clear();
-	this->errorLogFile.close();
+
 }

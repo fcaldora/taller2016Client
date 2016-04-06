@@ -5,21 +5,21 @@
 	</Conexion>
 	<Mensajes>
 		<Mensaje>
-			<Id>"15"</Id>
-			<Tipo>"string"</Tipo>
+			<Id>"Mensaje15"</Id>
+			<Tipo>"STRING"</Tipo>
 			<Valor>"gustavo"</Valor>
 		</Mensaje>
 
 		<Mensaje>
-			<Id>"23"</Id>
-			<Tipo>"string"</Tipo>
-			<Valor>"adrian"</Valor>
+			<Id>"Mensaje23"</Id>
+			<Tipo>"CHAR"</Tipo>
+			<Valor>"A"</Valor>
 		</Mensaje>
 
 		<Mensaje>
-			<Id>"32"</Id>
-			<Tipo>"string"</Tipo>
-			<Valor>"gimenez"</Valor>
+			<Id>"Mensaje32"</Id>
+			<Tipo>"INT"</Tipo>
+			<Valor>"20"</Valor>
 		</Mensaje>
 	</Mensajes>
 </Cliente>

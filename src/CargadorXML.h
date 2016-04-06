@@ -11,14 +11,12 @@ using namespace std;
 class XMLLoader {
 public:
 	XMLLoader();
-	void cargarServidor(string nombreArchivo);
-	void cargarCliente(string nombreArchivo);
-	TiXmlDocument* getDocumento();
+	bool clientXMLIsValid(const char* fileName);
 	virtual ~XMLLoader();
 
 private:
-	TiXmlDocument xmlDocument;
-	ofstream errorLogFile;
+	bool clientXMLHasValidValues(TiXmlDocument xmlFile);
+	bool clientXMLHasValidElements(TiXmlDocument xmlFile);
 };
 
 #endif /* CARGADORXML_H_ */

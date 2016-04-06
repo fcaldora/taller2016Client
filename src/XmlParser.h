@@ -19,16 +19,15 @@ using namespace std;
 
 class XmlParser {
 public:
-	XmlParser(TiXmlDocument* doc, ofstream* archivoErrores);
+	XmlParser(const char* fileName, ofstream* archivoErrores);
 	virtual ~XmlParser();
-	int cantidadMensajes();
-	int obtenerMensaje(clientMsj &mensaje, int nroMensaje);
-	void getServerPort(int &puerto);
+	int getNumberOfMessages();
+	int getMessage(clientMsj &mensaje, int nroMensaje);
 	int getClientPort();
 	string getIP();
-	void getMaxNumberOfClients(int &maxClientes);
+
 private:
-	TiXmlDocument* doc;
+	TiXmlDocument doc;
 	ofstream* archivoErrores;
 };
 

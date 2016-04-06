@@ -1,17 +1,22 @@
 #include "XmlParser.h"
 
-XmlParser::XmlParser(TiXmlDocument* doc, ofstream* archivoErrores) {
-	this->doc = doc;
+#include "Constants.h"
+
+XmlParser::XmlParser(const char* fileName, ofstream* archivoErrores) {
+	TiXmlDocument xmlFile(fileName);
+	if (xmlFile.LoadFile()) {
+		this->doc = xmlFile;
+	}
 	this->archivoErrores = archivoErrores;
 	this->archivoErrores->open("erroresXml", ios_base::out);
 }
 
-int XmlParser::cantidadMensajes(){
+int XmlParser::getNumberOfMessages(){
 	int contador = 0;
 	bool masMensajes = true;
-	TiXmlHandle docHandle(this->doc);
+	TiXmlHandle docHandle(&this->doc);
 	while(masMensajes){
-		TiXmlElement* msj = docHandle.FirstChild("Cliente").FirstChild("Mensajes").Child("Mensaje", contador).ToElement();
+		TiXmlElement* msj = docHandle.FirstChild(kClientTag).FirstChild(kMessagesTag).Child(kMessageTag, contador).ToElement();
 		if(msj)
 			contador++;
 		else
@@ -20,17 +25,17 @@ int XmlParser::cantidadMensajes(){
 	return contador;
 }
 
-int XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
-	TiXmlHandle docHandle(this->doc);
-	TiXmlElement* msj = docHandle.FirstChild("Cliente").FirstChild("Mensajes").Child("Mensaje", nroMensaje).ToElement();
+int XmlParser::getMessage(clientMsj &mensaje, int nroMensaje){
+	TiXmlHandle docHandle(&this->doc);
+	TiXmlElement* msj = docHandle.FirstChild(kClientTag).FirstChild(kMessagesTag).Child(kMessageTag, nroMensaje).ToElement();
 	if (msj){
-		string id(msj->FirstChild("Id")->ToElement()->GetText());
+		string id(msj->FirstChild(kMessageIDTag)->ToElement()->GetText());
 		memset(mensaje.id,0,LONGCHAR);
 		strncpy(mensaje.id, id.c_str(), id.size());
-		string type(msj->FirstChild("Tipo")->ToElement()->GetText());
+		string type(msj->FirstChild(kMesssageTypeTag)->ToElement()->GetText());
 		memset(mensaje.type,0,LONGCHAR);
 		strncpy(mensaje.type, type.c_str(), type.size());
-		string value(msj->FirstChild("Valor")->ToElement()->GetText());
+		string value(msj->FirstChild(kMessageValueTag)->ToElement()->GetText());
 		memset(mensaje.value,0,LONGCHAR);
 		strncpy(mensaje.value, value.c_str(), value.size());
 		return 0;
@@ -41,19 +46,9 @@ int XmlParser::obtenerMensaje(clientMsj &mensaje, int nroMensaje){
 	}
 }
 
-void XmlParser::getServerPort(int &puerto){
-	TiXmlHandle docHandle(this->doc);
-	TiXmlElement* puertoElem = docHandle.FirstChild("Servidor").FirstChild("Puerto").ToElement();
-
-	if(puertoElem)
-		puerto = atoi(puertoElem->GetText());
-	else
-		cout<<"Error al obtener el puerto. XML mal escrito.";
-}
-
 int XmlParser::getClientPort() {
-	TiXmlHandle docHandle(this->doc);
-	TiXmlElement* puertoElem = docHandle.FirstChild("Cliente").FirstChild("Conexion").FirstChild("Puerto").ToElement();
+	TiXmlHandle docHandle(&this->doc);
+	TiXmlElement* puertoElem = docHandle.FirstChild(kClientTag).FirstChild(kConnectionTag).FirstChild(kPortTag).ToElement();
 
 	if(puertoElem)
 		return atoi(puertoElem->GetText());
@@ -65,8 +60,8 @@ int XmlParser::getClientPort() {
 }
 
 string XmlParser::getIP(){
-	TiXmlHandle docHandle(this->doc);
-	TiXmlElement* ipElem = docHandle.FirstChild("Cliente").FirstChild("Conexion").FirstChild("Ip").ToElement();
+	TiXmlHandle docHandle(&this->doc);
+	TiXmlElement* ipElem = docHandle.FirstChild(kClientTag).FirstChild(kConnectionTag).FirstChild(kIPTag).ToElement();
 
 	if(ipElem)
 		return string(ipElem->GetText());
@@ -75,16 +70,6 @@ string XmlParser::getIP(){
 		*archivoErrores<<"Error al obtener la ip. Xml mal escrito"<<endl;
 		return "";
 	}
-}
-
-void XmlParser::getMaxNumberOfClients(int &maxClientes){
-	TiXmlHandle docHandle(this->doc);
-	TiXmlElement* maxElem = docHandle.FirstChild("Servidor").FirstChild("CantidadMaximaClientes").ToElement();
-
-	if (maxElem)
-		maxClientes = atoi(maxElem->GetText());
-	else
-		cout<<"Error al obtener el numero maximo de clientes";
 }
 
 XmlParser::~XmlParser() {

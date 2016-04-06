@@ -133,11 +133,11 @@ int readBlock(int fd, void* buffer, int len, ofstream* archivoErrores) {
 }
 
 void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser parser){
-	int cantidadMensajes = parser.cantidadMensajes();
+	int cantidadMensajes = parser.getNumberOfMessages();
 	int contador;
 	for(contador = 0; contador<cantidadMensajes;contador++){
 		clientMsj* mensaje = (clientMsj*)malloc(sizeof(clientMsj));
-		parser.obtenerMensaje(*mensaje, contador);
+		parser.getMessage(*mensaje, contador);
 		listaMensajes.push_back(mensaje);
 	}
 }
@@ -164,32 +164,30 @@ int main(int argc, char* argv[]) {
 
 	if(argc != 2){
 		fileName = kClientTestFile;
-		cout<<"Falta escribir el nombre del archivo, se usara uno por defecto."<<endl;
+		cout<<"Falta escribir el nombre del archivo del cliente, se usara uno por defecto."<<endl;
 	} else {
 		fileName = argv[1];
-		//if (!xmlLoader->serverXMLIsValid(fileName)){
-			//fileName = kServerTestFile;
-		//}
+		if (!xmlLoader->clientXMLIsValid(fileName)){
+			fileName = kClientTestFile;
+		}
 	}
-
-	xmlLoader->cargarServidor("clienteTest.txt");
 
 	ofstream erroresXml; //Log de errores de mala escritura del XML.
 	ofstream erroresConexion;
 	erroresConexion.open("ErroresConexion",ios_base::app);
 	ofstream erroresDatos;
 	erroresDatos.open("erroresEnDatos",ios_base::app);
-	XmlParser parser(xmlLoader->getDocumento(), &erroresXml);
+	XmlParser parser(fileName, &erroresXml);
 	string ip = parser.getIP();
 	int port = parser.getClientPort();
 
 	//Chequeo si los datos estan bien. Si estan mal, cargo un xml por defecto.
-	if(checkIp(ip, &erroresDatos)<0 || checkPuerto(port, &erroresDatos)<0){
-		xmlLoader->cargarServidor("clienteTest");
-		XmlParser parser(xmlLoader->getDocumento(), &erroresXml);
+	/*if(checkIp(ip, &erroresDatos)<0 || checkPuerto(port, &erroresDatos)<0){
+		XmlParser parser(fileName, &erroresXml);
 		ip = parser.getIP();
 		port = parser.getClientPort();
-	}
+	}*/
+
 	cargarMensajes(messagesList, parser);
 	int destinationSocket;
 
@@ -228,7 +226,7 @@ int main(int argc, char* argv[]) {
 					cout <<"Opcion incorrecta"<<endl;
 				}else{
 					clientMsj mensaje, response;
-					parser.obtenerMensaje(mensaje, opcion - 4);
+					parser.getMessage(mensaje, opcion - 4);
 					int msjLength = sizeof(mensaje);
 					write_socket(destinationSocket, &mensaje, msjLength, &erroresConexion);
 					readBlock(destinationSocket, &response, sizeof(response),  &erroresConexion);
