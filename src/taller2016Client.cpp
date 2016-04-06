@@ -11,6 +11,7 @@
 #include "CargadorXML.h"
 #include <list>
 #include <pthread.h>
+#include "ErrorLogsWriter.h"
 
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
@@ -21,12 +22,13 @@ list<clientMsj*> messagesList;
 pthread_t clientThreadID[3];
 XMLLoader *xmlLoader;
 XmlParser *parser;
+ErrorLogsWriter *erroLogsWriter;
 
 struct thread_args {
     int socketConnection;
 }args;
 
-void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, string message) {
+void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, ErrorLogsWriter *erroLogsWriter, string message) {
 	cout << message << endl;
 	delete xmlLoader;
 	delete xmlParser;
@@ -47,7 +49,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 	if ((hPtr = gethostbyname(remoteHost)) == NULL) {
 		cerr << "System DNS name resolution not configured properly." << endl;
 		*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
-		prepareForExit(xmlLoader, parser, "System DNS name resolution not configured properly.");
+		prepareForExit(xmlLoader, parser, erroLogsWriter, "System DNS name resolution not configured properly.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -55,7 +57,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 
 	if ((socketHandle = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		close(socketHandle);
-		prepareForExit(xmlLoader, parser, "SOCKET FAILURE");
+		prepareForExit(xmlLoader, parser, erroLogsWriter, "SOCKET FAILURE");
 		exit(EXIT_FAILURE);
 	}
 
@@ -69,7 +71,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 			sizeof(sockaddr_in)) < 0) {
 		close(socketHandle);
 		*archivoErrores<<"Error. Puerto "<<portNumber<<" inválido."<<endl;
-		prepareForExit(xmlLoader, parser, "CONNECT FAILURE");
+		prepareForExit(xmlLoader, parser, erroLogsWriter, "CONNECT FAILURE");
 		exit(EXIT_FAILURE);
 	}
 
@@ -158,6 +160,7 @@ void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
 int main(int argc, char* argv[]) {
 	const char *fileName;
 	xmlLoader = new XMLLoader();
+	erroLogsWriter = new ErrorLogsWriter();
 
 	if(argc != 2){
 		fileName = kClientTestFile;
@@ -226,6 +229,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	prepareForExit(xmlLoader, parser, "EXIT_SUCCESS");
+	prepareForExit(xmlLoader, parser, erroLogsWriter, "EXIT_SUCCESS");
 	return EXIT_SUCCESS;
 }

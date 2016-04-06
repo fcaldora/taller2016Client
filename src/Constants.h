@@ -8,6 +8,11 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#include <string>
+#include <iostream>
+#include <fstream>
+using namespace std;
+
 #define kClientTag "Cliente"
 #define kConnectionTag "conexion"
 #define kIPTag "IP"
