@@ -23,8 +23,8 @@ public:
 	virtual ~XmlParser();
 	int getNumberOfMessages();
 	int getMessage(clientMsj &mensaje, int nroMensaje);
-	int getClientPort();
-	string getIP();
+	int getServerPort();
+	string getServerIP();
 
 private:
 	TiXmlDocument doc;

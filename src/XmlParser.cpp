@@ -46,7 +46,7 @@ int XmlParser::getMessage(clientMsj &mensaje, int nroMensaje){
 	}
 }
 
-int XmlParser::getClientPort() {
+int XmlParser::getServerPort() {
 	TiXmlHandle docHandle(&this->doc);
 	TiXmlElement* puertoElem = docHandle.FirstChild(kClientTag).FirstChild(kConnectionTag).FirstChild(kPortTag).ToElement();
 
@@ -59,7 +59,7 @@ int XmlParser::getClientPort() {
 	}
 }
 
-string XmlParser::getIP(){
+string XmlParser::getServerIP(){
 	TiXmlHandle docHandle(&this->doc);
 	TiXmlElement* ipElem = docHandle.FirstChild(kClientTag).FirstChild(kConnectionTag).FirstChild(kIPTag).ToElement();
 

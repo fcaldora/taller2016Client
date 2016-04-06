@@ -19,10 +19,18 @@ using namespace std;
 
 list<clientMsj*> messagesList;
 pthread_t clientThreadID[3];
+XMLLoader *xmlLoader;
+XmlParser *parser;
 
 struct thread_args {
     int socketConnection;
 }args;
+
+void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, string message) {
+	cout << message << endl;
+	delete xmlLoader;
+	delete xmlParser;
+}
 
 //Esta funcion va en la opcion del menu que dice "conectar".
 int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
@@ -39,6 +47,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 	if ((hPtr = gethostbyname(remoteHost)) == NULL) {
 		cerr << "System DNS name resolution not configured properly." << endl;
 		*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
+		prepareForExit(xmlLoader, parser, "System DNS name resolution not configured properly.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -46,6 +55,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 
 	if ((socketHandle = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		close(socketHandle);
+		prepareForExit(xmlLoader, parser, "SOCKET FAILURE");
 		exit(EXIT_FAILURE);
 	}
 
@@ -59,6 +69,7 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 			sizeof(sockaddr_in)) < 0) {
 		close(socketHandle);
 		*archivoErrores<<"Error. Puerto "<<portNumber<<" inválido."<<endl;
+		prepareForExit(xmlLoader, parser, "CONNECT FAILURE");
 		exit(EXIT_FAILURE);
 	}
 
@@ -80,6 +91,7 @@ int write_socket(int destinationSocket, void *buf, int len, ofstream* archivoErr
 }
 
 void printMenu(list<clientMsj*> listaMensajes){
+	cout << endl << "Menu:" << endl;
 	cout<<"1. Conectar"<<endl;
 	cout<<"2. Desconectar"<<endl;
 	cout<<"3. Salir "<<endl;
@@ -89,6 +101,7 @@ void printMenu(list<clientMsj*> listaMensajes){
 		cout<< i+4 <<". Enviar mensaje "<<(*iterador)->id<<endl;
 		i++;
 	}
+	cout << "Ingresar opcion:" ;
 }
 
 int readMsj(int socket, int bytesARecibir, ofstream* archivoErrores){
@@ -132,35 +145,19 @@ int readBlock(int fd, void* buffer, int len, ofstream* archivoErrores) {
 	return count;
 }
 
-void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser parser){
-	int cantidadMensajes = parser.getNumberOfMessages();
+void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
+	int cantidadMensajes = parser->getNumberOfMessages();
 	int contador;
 	for(contador = 0; contador<cantidadMensajes;contador++){
 		clientMsj* mensaje = (clientMsj*)malloc(sizeof(clientMsj));
-		parser.getMessage(*mensaje, contador);
+		parser->getMessage(*mensaje, contador);
 		listaMensajes.push_back(mensaje);
 	}
 }
 
-int checkPuerto(int puerto, ofstream* archivoErrores){
-	if(puerto<1025 || puerto>65536){
-		*archivoErrores<<"El puerto "<<puerto<<" no es válido."<<endl;
-		return -1;
-	}
-	return 0;
-}
-
-int checkIp(string ip, ofstream* archivoErrores){
-	if(ip.size()<7 || ip.size()>14){
-		*archivoErrores<<"La ip "<<ip<<" no es válida."<<endl;
-		return -1;
-	}
-	return 0;
-}
-
 int main(int argc, char* argv[]) {
 	const char *fileName;
-	XMLLoader *xmlLoader = new XMLLoader();
+	xmlLoader = new XMLLoader();
 
 	if(argc != 2){
 		fileName = kClientTestFile;
@@ -177,16 +174,9 @@ int main(int argc, char* argv[]) {
 	erroresConexion.open("ErroresConexion",ios_base::app);
 	ofstream erroresDatos;
 	erroresDatos.open("erroresEnDatos",ios_base::app);
-	XmlParser parser(fileName, &erroresXml);
-	string ip = parser.getIP();
-	int port = parser.getClientPort();
-
-	//Chequeo si los datos estan bien. Si estan mal, cargo un xml por defecto.
-	/*if(checkIp(ip, &erroresDatos)<0 || checkPuerto(port, &erroresDatos)<0){
-		XmlParser parser(fileName, &erroresXml);
-		ip = parser.getIP();
-		port = parser.getClientPort();
-	}*/
+	parser = new XmlParser(fileName, &erroresXml);
+	string serverIP = parser->getServerIP();
+	int serverPort = parser->getServerPort();
 
 	cargarMensajes(messagesList, parser);
 	int destinationSocket;
@@ -199,7 +189,7 @@ int main(int argc, char* argv[]) {
 		clientMsj disconnection, response;
 		switch(opcion){
 			case 1:
-				destinationSocket = initializeClient(ip, port, &erroresConexion);
+				destinationSocket = initializeClient(serverIP, serverPort, &erroresConexion);
 				//avisar si se conecto bien o no.
 				printMenu(messagesList);
 				break;
@@ -226,7 +216,7 @@ int main(int argc, char* argv[]) {
 					cout <<"Opcion incorrecta"<<endl;
 				}else{
 					clientMsj mensaje, response;
-					parser.getMessage(mensaje, opcion - 4);
+					parser->getMessage(mensaje, opcion - 4);
 					int msjLength = sizeof(mensaje);
 					write_socket(destinationSocket, &mensaje, msjLength, &erroresConexion);
 					readBlock(destinationSocket, &response, sizeof(response),  &erroresConexion);
@@ -234,10 +224,8 @@ int main(int argc, char* argv[]) {
 				}
 				printMenu(messagesList);
 		}
-
 	}
 
-	delete xmlLoader;
-	cout << "EXIT_SUCCESS"<<endl;
+	prepareForExit(xmlLoader, parser, "EXIT_SUCCESS");
 	return EXIT_SUCCESS;
 }
