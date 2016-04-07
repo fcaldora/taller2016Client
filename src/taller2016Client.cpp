@@ -81,14 +81,11 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 	return socketHandle;
 }
 
-int sendMsj(int socket, string buffer){
-	uint32_t enviados = 0;
+int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
+	int enviados = 0;
 	int res = 0;
-	uint32_t bytesAEnviar = (buffer.size());
-	//Envio la longitud del mensaje primero.
-	res = send(socket, &bytesAEnviar, sizeof(uint32_t), MSG_WAITALL);
 	while(enviados<bytesAEnviar){
-		res = send(socket, &(buffer.c_str())[enviados], bytesAEnviar - enviados, MSG_WAITALL);
+		res = send(socket, &(mensaje)[enviados], bytesAEnviar - enviados, MSG_WAITALL);
 		if (res == 0){ //Se cerró la conexion. Escribir en log de errores de conexion.
 			return 0;
 		}else if(res<0){ //Error en el envio del mensaje. Escribir en el log.
@@ -114,16 +111,11 @@ void printMenu(list<clientMsj*> listaMensajes){
 	cout<<"Ingresar opcion: ";
 }
 
-int readMsj(int socket, ofstream* archivoErrores){
-	uint32_t totalBytesRecibidos = 0;
+int readMsj(int socket, int bytesARecibir, clientMsj* msj, ofstream* archivoErrores){
+	int totalBytesRecibidos = 0;
 	int recibidos = 0;
-	uint32_t numBytes;
-	recv(socket, &numBytes, sizeof(uint32_t), MSG_WAITALL);
-	int tamBuffer = numBytes;
-	char buffer[tamBuffer];
-	memset(buffer,0,tamBuffer);
-	while (totalBytesRecibidos < numBytes){
-		recibidos = recv(socket, &buffer[totalBytesRecibidos], tamBuffer - totalBytesRecibidos, MSG_WAITALL);
+	while (totalBytesRecibidos < bytesARecibir){
+		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			*archivoErrores<<"Error al recibir mensaje"<<endl;
 			return -1;
@@ -135,7 +127,6 @@ int readMsj(int socket, ofstream* archivoErrores){
 			totalBytesRecibidos += recibidos;
 		}
 	}
-	cout<<buffer<<endl;
 	return 1;
 }
 
@@ -160,7 +151,7 @@ void ciclar(int socket, int milisegundos, XmlParser *parser, ofstream* erroresCo
 	while(!fin){
 		clientMsj mensaje;
 		parser->getMessage(mensaje, contador);
-		sendMsj(socket,mensaje.value);
+		sendMsj(socket,20,&mensaje);
 		cantidadMensajesEnviados++;
 		contador++;
 		if(contador == parser->cantidadMensajes())
@@ -204,7 +195,11 @@ int main(int argc, char* argv[]) {
 	printMenu(messagesList);
 	unsigned int opcion;
 	bool fin = false;
-	string msjDisconnection("Disconnection");
+	clientMsj msjDisconnection;
+	clientMsj recibido;
+	strncpy(msjDisconnection.id, "1",20);
+	strncpy(msjDisconnection.type, "STRING",20);
+	strncpy(msjDisconnection.value, "Desconectado",20);
 	while (!fin){
 		cin>>opcion;
 		switch(opcion){
@@ -213,15 +208,15 @@ int main(int argc, char* argv[]) {
 				printMenu(messagesList);
 				break;
 			case 2:
-				sendMsj(destinationSocket, msjDisconnection);
-				readMsj(destinationSocket, &erroresConexion);
+				sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
+				readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				printMenu(messagesList);
 				break;
 			case 3:
 				fin = true;
-				sendMsj(destinationSocket, msjDisconnection);
-				readMsj(destinationSocket, &erroresConexion);
+				sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
+				readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				break;
 			case 4:
@@ -238,9 +233,10 @@ int main(int argc, char* argv[]) {
 				}else{
 					clientMsj mensaje;
 					parser->getMessage(mensaje, opcion - 5);
-					sendMsj(destinationSocket, string(mensaje.value));
+					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
 					cout<<"mensaje enviado: "<<mensaje.value<<endl;
-					readMsj(destinationSocket, &erroresConexion);
+					readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
+					cout<<"Mensaje recibido: "<<recibido.value<<endl;
 				}
 				printMenu(messagesList);
 		}
