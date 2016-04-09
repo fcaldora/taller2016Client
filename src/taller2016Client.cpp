@@ -148,10 +148,12 @@ void ciclar(int socket, int milisegundos, XmlParser *parser, ofstream* erroresCo
 	long double cantidadMilisegundosActual;
 	gettimeofday(&tiempoInicial, NULL);
 	long double cantidadMilisegundosFinal = (tiempoInicial.tv_sec * 1000) + milisegundos;
+	clientMsj mensaje, recibido;
 	while(!fin){
-		clientMsj mensaje;
 		parser->getMessage(mensaje, contador);
-		sendMsj(socket,20,&mensaje);
+		sendMsj(socket,sizeof(clientMsj),&mensaje);
+		readMsj(socket,sizeof(clientMsj), &recibido, erroresConexion);
+		cout<<"Mensaje recibido: "<<recibido.value<<endl;
 		cantidadMensajesEnviados++;
 		contador++;
 		if(contador == parser->cantidadMensajes())
@@ -195,11 +197,11 @@ int main(int argc, char* argv[]) {
 	printMenu(messagesList);
 	unsigned int opcion;
 	bool fin = false;
-	clientMsj msjDisconnection;
+	//clientMsj msjDisconnection;
 	clientMsj recibido;
-	strncpy(msjDisconnection.id, "1",20);
+	/*strncpy(msjDisconnection.id, "1",20);
 	strncpy(msjDisconnection.type, "STRING",20);
-	strncpy(msjDisconnection.value, "Desconectado",20);
+	strncpy(msjDisconnection.value, "Desconectado",20);*/
 	while (!fin){
 		cin>>opcion;
 		switch(opcion){
@@ -208,15 +210,15 @@ int main(int argc, char* argv[]) {
 				printMenu(messagesList);
 				break;
 			case 2:
-				sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
+				//sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
+				//readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				printMenu(messagesList);
 				break;
 			case 3:
 				fin = true;
-				sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
+				//sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
+				//readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				break;
 			case 4:
