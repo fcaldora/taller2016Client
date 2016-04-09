@@ -75,10 +75,12 @@ int initializeClient(string destinationIp, int port) {
 
 	if (connect(socketHandle, (struct sockaddr *) &remoteSocketInfo,
 			sizeof(sockaddr_in)) < 0) {
+
 		close(socketHandle);
-		logWriter->writeConnectionErrorDescription("Error en el puerto. CONNECT FAILURE");
-		prepareForExit(xmlLoader, parser, logWriter);
-		exit(EXIT_FAILURE);
+		logWriter->writeConnectionErrorDescription("Intenta mas tarde");
+		return 0;
+		//prepareForExit(xmlLoader, parser, logWriter);
+		//exit(EXIT_FAILURE);
 	}
 
 	userIsConnected = true;
@@ -93,15 +95,16 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 		res = send(socket, &(mensaje)[enviados], bytesAEnviar - enviados, MSG_WAITALL);
 		if (res == 0){
 			logWriter->writeErrorConnectionHasClosed();
+			userIsConnected = false;
 			return 0;
 		}else if(res<0){
 			logWriter->writeErrorInSendingMessage(mensaje);
 			return -1;
 		}else{
 			enviados += res;
+			logWriter->writeMessageSentSuccessfully(mensaje);
 		}
 	}
-	logWriter->writeMessageSentSuccessfully(mensaje);
 	return enviados;
 }
 
@@ -122,13 +125,14 @@ void printMenu(list<clientMsj*> listaMensajes){
 int readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	int totalBytesRecibidos = 0;
 	int recibidos = 0;
-	while (totalBytesRecibidos <= bytesARecibir){
+	while (totalBytesRecibidos < bytesARecibir){
 		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			logWriter->writeErrorInReceivingMessageWithID(msj->id);
 			return -1;
 		}else if(recibidos == 0){
 				close(socket);
+				userIsConnected = false;
 				logWriter->writeErrorConnectionHasClosed();
 				return -1;
 		}else{

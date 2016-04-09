@@ -70,7 +70,7 @@ void LogWriter::writeUserHasConnectedSuccessfully() {
 }
 
 void LogWriter::writeConnectionErrorDescription(string description) {
-	string error = "Hubo un error mientras el usuario se conectaba :" + description + "";
+	string error = "Hubo un error mientras el usuario se conectaba: " + description + "";
 	writeLogInFile(error);
 }
 
