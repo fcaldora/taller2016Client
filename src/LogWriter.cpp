@@ -133,6 +133,7 @@ void LogWriter::writeMessageSentSuccessfully(char *messageID) {
 }
 
 void LogWriter::writeUserDidTerminateApp() {
+	cout << this->logLevel;
 	if(this->logLevel == LogLevelTypeOnlyErrors)
 		return;
 	string log = "El usuario cerro la aplicacion";

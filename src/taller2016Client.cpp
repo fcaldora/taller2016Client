@@ -154,10 +154,12 @@ void ciclar(int socket, int milisegundos, XmlParser *parser){
 	long double cantidadMilisegundosActual;
 	gettimeofday(&tiempoInicial, NULL);
 	long double cantidadMilisegundosFinal = (tiempoInicial.tv_sec * 1000) + milisegundos;
+	clientMsj mensaje, recibido;
 	while(!fin){
-		clientMsj mensaje;
 		parser->getMessage(mensaje, contador);
-		sendMsj(socket,20,&mensaje);
+		sendMsj(socket,sizeof(clientMsj),&mensaje);
+		readMsj(socket,sizeof(clientMsj), &recibido);
+		cout<<"Mensaje recibido: "<<recibido.value<<endl;
 		cantidadMensajesEnviados++;
 		contador++;
 		if(contador == parser->cantidadMensajes())
@@ -197,32 +199,30 @@ int main(int argc, char* argv[]) {
 	printMenu(messagesList);
 	unsigned int userDidChooseOption;
 	bool appShouldExit = false;
-	clientMsj msjDisconnection;
+	//clientMsj msjDisconnection;
 	clientMsj recibido;
-	strncpy(msjDisconnection.id, "1",20);
-	strncpy(msjDisconnection.type, "STRING",20);
-	strncpy(msjDisconnection.value, "Desconectado",20);
 
 	while (!appShouldExit){
 		cin>>userDidChooseOption;
 		logWriter->writeUserDidSelectOption(userDidChooseOption);
 		switch(userDidChooseOption){
+
 			case 1:
 				destinationSocket = initializeClient(serverIP, serverPort);
 				logWriter->writeUserHasConnectedSuccessfully();
 				printMenu(messagesList);
 				break;
 			case 2:
-				sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket, sizeof(recibido), &recibido);
+				//sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
+				//readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				logWriter->writeUserHasDisconnectSuccessfully();
 				printMenu(messagesList);
 				break;
 			case 3:
 				appShouldExit = true;
-				sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket,sizeof(recibido), &recibido);
+				//sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
+				//readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				break;
 			case 4:

@@ -16,7 +16,7 @@ LogLevelType XmlParser::getLogLevel() {
 	if(logLevelElement == NULL)
 		return LogLevelTypeOnlyErrors;
 
-	const char* logLevelChar = configurationElement->GetText();
+	const char* logLevelChar = logLevelElement->GetText();
 	std::stringstream logLevelStrValue;
 	logLevelStrValue << logLevelChar;
 	unsigned int logLevelValue;
