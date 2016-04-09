@@ -159,7 +159,7 @@ void ciclar(int socket, int milisegundos, XmlParser *parser){
 		parser->getMessage(mensaje, contador);
 		sendMsj(socket,sizeof(clientMsj),&mensaje);
 		readMsj(socket,sizeof(clientMsj), &recibido);
-		cout<<"Mensaje recibido: "<<recibido.value<<endl;
+		//cout<<"Mensaje recibido: "<<recibido.value<<endl;
 		cantidadMensajesEnviados++;
 		contador++;
 		if(contador == parser->cantidadMensajes())
@@ -187,6 +187,8 @@ int main(int argc, char* argv[]) {
 			fileName = kClientTestFile;
 		}
 	}
+
+	xmlLoader->clientXMLIsValid(fileName);
 
 	parser = new XmlParser(fileName);
 	logWriter->setLogLevel(parser->getLogLevel());
@@ -240,9 +242,9 @@ int main(int argc, char* argv[]) {
 					clientMsj mensaje;
 					parser->getMessage(mensaje, userDidChooseOption - 5);
 					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
-					cout<<"mensaje enviado: "<<mensaje.value<<endl;
+					//cout<<"mensaje enviado: "<<mensaje.value<<endl;
 					readMsj(destinationSocket,sizeof(recibido), &recibido);
-					cout<<"Mensaje recibido: "<<recibido.value<<endl;
+					//cout<<"Mensaje recibido: "<<recibido.value<<endl;
 				}
 				printMenu(messagesList);
 		}

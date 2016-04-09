@@ -19,7 +19,7 @@ public:
 	virtual ~LogWriter();
 
 	void writeUserDidnotEnterFileName();
-	void writeInvalidadValueForElementInXML(string element);
+	void writeInvalidValueForElementInXML(string element);
 	void writeNotFoundElementInXML(string elementName);
 	void writeNotFoundFileErrorForFileName(string fileName);
 	void setLogLevel(LogLevelType logLevel);
@@ -33,6 +33,7 @@ public:
 	void writeErrorInReceivingMessageWithID(char *messageID);
 	void writeReceivedSuccessfullyMessageWithID(char *messageID);
 	void writeUserDidTerminateApp();
+	void writeMessagesIDAreDuplicated();
 
 private:
 	LogLevelType logLevel;

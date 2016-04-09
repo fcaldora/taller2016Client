@@ -18,8 +18,11 @@ public:
 
 private:
 	LogWriter *logWriter;
+	vector<const char*> messageIDList;
 	bool clientXMLHasValidValues(TiXmlDocument xmlFile);
 	bool clientXMLHasValidElements(TiXmlDocument xmlFile);
+	bool clientXMLHasValidMessagesID();
+	string stringFromChar(const char *value);
 };
 
 #endif /* CARGADORXML_H_ */

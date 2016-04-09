@@ -14,6 +14,8 @@
 #include <sstream>
 #include <string.h>
 #include <stdlib.h>
+#include <list>
+#include <vector>
 
 using namespace std;
 
@@ -26,7 +28,7 @@ using namespace std;
 #define kMessagesTag "mensajes"
 #define kMessageTag "mensaje"
 #define kMessageIDTag "id"
-#define kMesssageTypeTag "tipo"
+#define kMessageTypeTag "tipo"
 #define kMessageValueTag "valor"
 #define kMaxNumberOfValidPort 65535
 #define kMessageTypeInt "INT"

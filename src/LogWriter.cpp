@@ -32,8 +32,13 @@ void LogWriter::writeNotFoundElementInXML(string elementName){
 	writeLogInFile(error);
 }
 
-void LogWriter::writeInvalidadValueForElementInXML(string element){
+void LogWriter::writeInvalidValueForElementInXML(string element){
 	string error = "El valor del elemento '" + element + "' es invalido. Se usara un XML por defecto.";
+	writeLogInFile(error);
+}
+
+void LogWriter::writeMessagesIDAreDuplicated() {
+	string error = "Uno o mas mensajes tienen el mismo ID. Se usara un XML por defecto";
 	writeLogInFile(error);
 }
 
@@ -133,7 +138,6 @@ void LogWriter::writeMessageSentSuccessfully(char *messageID) {
 }
 
 void LogWriter::writeUserDidTerminateApp() {
-	cout << this->logLevel;
 	if(this->logLevel == LogLevelTypeOnlyErrors)
 		return;
 	string log = "El usuario cerro la aplicacion";

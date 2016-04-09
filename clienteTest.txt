@@ -1,6 +1,6 @@
 <Cliente>
 	<configuracion>
-		<nivelDeLog>2</nivelDeLog>
+		<nivelDeLog>1</nivelDeLog>
 	</configuracion>
 	<conexion>
 		<IP>127.0.0.1</IP>

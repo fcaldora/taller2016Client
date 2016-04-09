@@ -18,7 +18,7 @@ bool XMLLoader::clientXMLIsValid(const char *fileName){
 		return false;
 	}
 
-	if (!clientXMLHasValidElements(xmlFile) || !clientXMLHasValidValues(xmlFile)) {
+	if (!clientXMLHasValidElements(xmlFile) || !clientXMLHasValidValues(xmlFile) || !clientXMLHasValidMessagesID()) {
 		xmlFile.Clear();
 		return false;
 	}
@@ -70,9 +70,9 @@ bool XMLLoader::clientXMLHasValidElements(TiXmlDocument xmlFile) {
 		return false;
 	}
 
-	TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
+	TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMessageTypeTag);
 	if (firstMessageType == NULL) {
-		this->logWriter->writeNotFoundElementInXML(kMesssageTypeTag);
+		this->logWriter->writeNotFoundElementInXML(kMessageTypeTag);
 		return false;
 	}
 
@@ -89,9 +89,9 @@ bool XMLLoader::clientXMLHasValidElements(TiXmlDocument xmlFile) {
 			return false;
 		}
 
-		TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
+		TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMessageTypeTag);
 		if (firstMessageType == NULL) {
-			this->logWriter->writeNotFoundElementInXML(kMesssageTypeTag);
+			this->logWriter->writeNotFoundElementInXML(kMessageTypeTag);
 			return false;
 		}
 
@@ -111,7 +111,7 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 	struct sockaddr_in sa;
 	int success = inet_pton(AF_INET, clientIP, &(sa.sin_addr));
 	if (success != 1){
-		this->logWriter->writeInvalidadValueForElementInXML(kIPTag);
+		this->logWriter->writeInvalidValueForElementInXML(kIPTag);
 		return false;
 	}
 
@@ -121,23 +121,42 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 	unsigned int portIntValue;
 	portStrValue >> portIntValue;
 	if (portIntValue <= 0 || portIntValue > kMaxNumberOfValidPort) {
-		this->logWriter->writeInvalidadValueForElementInXML(kPortTag);
+		this->logWriter->writeInvalidValueForElementInXML(kPortTag);
 		return false;
 	}
 
-	TiXmlElement *firstMessage = xmlFile.FirstChildElement(kClientTag)->FirstChildElement(kConnectionTag)->NextSiblingElement(kMessagesTag)->FirstChildElement(kMessageTag);
-	for(TiXmlElement *message = firstMessage; message != NULL; message = message->NextSiblingElement(kMessageTag)) {
-		const char *firstMessageType = message->FirstChildElement(kMesssageTypeTag)->GetText();
-		stringstream firstMessageTypeStreamString;
-		firstMessageTypeStreamString << firstMessageType;
-		string firstMessageTypeString = firstMessageTypeStreamString.str();
-		if ((firstMessageTypeString.compare(kMessageTypeInt) != 0) && (firstMessageTypeString.compare(kMessageTypeString) != 0) && (firstMessageTypeString.compare(kMessageTypeChar) != 0) && (firstMessageTypeString.compare(kMessageTypeDouble) != 0)) {
-			this->logWriter->writeInvalidadValueForElementInXML(kMesssageTypeTag);
+	TiXmlElement *firstMessageElement = xmlFile.FirstChildElement(kClientTag)->FirstChildElement(kConnectionTag)->NextSiblingElement(kMessagesTag)->FirstChildElement(kMessageTag);
+	for(TiXmlElement *message = firstMessageElement; message != NULL; message = message->NextSiblingElement(kMessageTag)) {
+		const char *messageID = message->FirstChildElement(kMessageIDTag)->GetText();
+		this->messageIDList.push_back(messageID);
+
+		string messageType = stringFromChar(message->FirstChildElement(kMessageTypeTag)->GetText());
+		if ((messageType.compare(kMessageTypeInt) != 0) && (messageType.compare(kMessageTypeString) != 0) && (messageType.compare(kMessageTypeChar) != 0) && (messageType.compare(kMessageTypeDouble) != 0)) {
+			this->logWriter->writeInvalidValueForElementInXML(kMessageTypeTag);
 			return false;
 		}
 	}
 
 	return true;
+}
+
+bool XMLLoader::clientXMLHasValidMessagesID() {
+	for (unsigned int i = 0 ; i < this->messageIDList.size() ; i ++) {
+		for (unsigned int j = 0 ; j < this->messageIDList.size() ; j++) {
+			if (i != j && (strcmp(this->messageIDList[i], this->messageIDList[j]) == 0)) {
+				this->logWriter->writeMessagesIDAreDuplicated();
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+string XMLLoader::stringFromChar(const char *value) {
+	stringstream firstMessageTypeStreamString;
+	firstMessageTypeStreamString << value;
+	return firstMessageTypeStreamString.str();
 }
 
 XMLLoader::~XMLLoader() {

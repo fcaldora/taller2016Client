@@ -53,7 +53,7 @@ int XmlParser::getMessage(clientMsj &mensaje, int nroMensaje){
 		string id(msj->FirstChild(kMessageIDTag)->ToElement()->GetText());
 		memset(mensaje.id,0,kLongChar);
 		strncpy(mensaje.id, id.c_str(), id.size());
-		string type(msj->FirstChild(kMesssageTypeTag)->ToElement()->GetText());
+		string type(msj->FirstChild(kMessageTypeTag)->ToElement()->GetText());
 		memset(mensaje.type,0,kLongChar);
 		strncpy(mensaje.type, type.c_str(), type.size());
 		string value(msj->FirstChild(kMessageValueTag)->ToElement()->GetText());
