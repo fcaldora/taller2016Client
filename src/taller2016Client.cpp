@@ -20,17 +20,19 @@
 using namespace std;
 
 list<clientMsj*> messagesList;
-pthread_t clientThreadID[3];
 XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
+bool userIsConnected;
 
-struct thread_args {
-    int socketConnection;
-}args;
+enum MenuOptionChoosedType {
+	MenuOptionChoosedTypeConnect = 1,
+	MenuOptionChoosedTypeDisconnect = 2,
+	MenuOptionChoosedTypeExit = 3,
+	MenuOptionChoosedTypeCycle = 4
+};
 
-void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWriter, string message) {
-	cout << message << endl;
+void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWriter) {
 	delete xmlLoader;
 	delete xmlParser;
 	delete logWriter;
@@ -50,9 +52,9 @@ int initializeClient(string destinationIp, int port) {
 	//ip invalida.
 	if ((hPtr = gethostbyname(remoteHost)) == NULL) {
 		cerr << "System DNS name resolution not configured properly." << endl;
-		logWriter->writeConnectionErrorDescription("Error en la IP");
+		logWriter->writeConnectionErrorDescription("Error en la IP. System DNS name resolution not configured properly.");
 		//*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
-		prepareForExit(xmlLoader, parser, logWriter, "System DNS name resolution not configured properly.");
+		prepareForExit(xmlLoader, parser, logWriter);
 		exit(EXIT_FAILURE);
 	}
 
@@ -60,8 +62,8 @@ int initializeClient(string destinationIp, int port) {
 
 	if ((socketHandle = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		close(socketHandle);
-		logWriter->writeConnectionErrorDescription("Error creando el socket");
-		prepareForExit(xmlLoader, parser, logWriter, "SOCKET FAILURE");
+		logWriter->writeConnectionErrorDescription("Error creando el socket. SOCKET FAILURE");
+		prepareForExit(xmlLoader, parser, logWriter);
 		exit(EXIT_FAILURE);
 	}
 
@@ -74,12 +76,13 @@ int initializeClient(string destinationIp, int port) {
 	if (connect(socketHandle, (struct sockaddr *) &remoteSocketInfo,
 			sizeof(sockaddr_in)) < 0) {
 		close(socketHandle);
-		logWriter->writeConnectionErrorDescription("Error en el puerto");
-		prepareForExit(xmlLoader, parser, logWriter, "CONNECT FAILURE");
+		logWriter->writeConnectionErrorDescription("Error en el puerto. CONNECT FAILURE");
+		prepareForExit(xmlLoader, parser, logWriter);
 		exit(EXIT_FAILURE);
 	}
 
-	cout<<"Connected!"<<endl;
+	userIsConnected = true;
+	logWriter->writeUserHasConnectedSuccessfully();
 	return socketHandle;
 }
 
@@ -92,13 +95,13 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 			logWriter->writeErrorConnectionHasClosed();
 			return 0;
 		}else if(res<0){
-			logWriter->writeErrorInSendingMessage(mensaje->id);
+			logWriter->writeErrorInSendingMessage(mensaje);
 			return -1;
 		}else{
 			enviados += res;
 		}
 	}
-	logWriter->writeMessageSentSuccessfully(mensaje->id);
+	logWriter->writeMessageSentSuccessfully(mensaje);
 	return enviados;
 }
 
@@ -119,7 +122,7 @@ void printMenu(list<clientMsj*> listaMensajes){
 int readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	int totalBytesRecibidos = 0;
 	int recibidos = 0;
-	while (totalBytesRecibidos < bytesARecibir){
+	while (totalBytesRecibidos <= bytesARecibir){
 		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			logWriter->writeErrorInReceivingMessageWithID(msj->id);
@@ -132,7 +135,7 @@ int readMsj(int socket, int bytesARecibir, clientMsj* msj){
 			totalBytesRecibidos += recibidos;
 		}
 	}
-	logWriter->writeReceivedSuccessfullyMessageWithID(msj->id);
+	logWriter->writeReceivedSuccessfullyMessageWithID(msj);
 	return 1;
 }
 
@@ -159,7 +162,6 @@ void ciclar(int socket, int milisegundos, XmlParser *parser){
 		parser->getMessage(mensaje, contador);
 		sendMsj(socket,sizeof(clientMsj),&mensaje);
 		readMsj(socket,sizeof(clientMsj), &recibido);
-		//cout<<"Mensaje recibido: "<<recibido.value<<endl;
 		cantidadMensajesEnviados++;
 		contador++;
 		if(contador == parser->cantidadMensajes())
@@ -177,6 +179,7 @@ int main(int argc, char* argv[]) {
 	const char *fileName;
 	logWriter = new LogWriter();
 	xmlLoader = new XMLLoader(logWriter);
+	userIsConnected = false;
 
 	if(argc != 2){
 		fileName = kClientTestFile;
@@ -201,56 +204,59 @@ int main(int argc, char* argv[]) {
 	printMenu(messagesList);
 	unsigned int userDidChooseOption;
 	bool appShouldExit = false;
-	//clientMsj msjDisconnection;
 	clientMsj recibido;
 
 	while (!appShouldExit){
 		cin>>userDidChooseOption;
 		logWriter->writeUserDidSelectOption(userDidChooseOption);
-		switch(userDidChooseOption){
 
-			case 1:
-				destinationSocket = initializeClient(serverIP, serverPort);
-				logWriter->writeUserHasConnectedSuccessfully();
+		switch(userDidChooseOption){
+			case MenuOptionChoosedTypeConnect:
+				if (!userIsConnected) {
+					destinationSocket = initializeClient(serverIP, serverPort);
+				} else
+					cout << "Ya estas conectado!!" << endl;
 				printMenu(messagesList);
 				break;
-			case 2:
-				//sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
-				//readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
-				close(destinationSocket);
-				logWriter->writeUserHasDisconnectSuccessfully();
+			case MenuOptionChoosedTypeDisconnect:
+				if (userIsConnected) {
+					close(destinationSocket);
+					logWriter->writeUserHasDisconnectSuccessfully();
+					userIsConnected = false;
+				} else
+					cout << "Tenes que conectarte primero" << endl;
 				printMenu(messagesList);
 				break;
-			case 3:
+			case MenuOptionChoosedTypeExit:
 				appShouldExit = true;
-				//sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
-				//readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
 				close(destinationSocket);
 				break;
-			case 4:
-				//Ciclar.
-				cout<<"Indicar cantidad de milisegundos: "<<endl;
-				int milisegundos;
-				cin>>milisegundos;
-				ciclar(destinationSocket, milisegundos, parser);
+			case MenuOptionChoosedTypeCycle:
+				if (userIsConnected) {
+					cout<<"Indicar cantidad de milisegundos: "<<endl;
+					int milisegundos;
+					cin>>milisegundos;
+					ciclar(destinationSocket, milisegundos, parser);
+				} else
+					cout << "Tenes que conectarte primero" << endl;
+
 				printMenu(messagesList);
 				break;
 			default:
 				if(userDidChooseOption > messagesList.size() + 4){
 					cout <<"Opcion incorrecta"<<endl;
-				}else{
+				}else if (userIsConnected){
 					clientMsj mensaje;
 					parser->getMessage(mensaje, userDidChooseOption - 5);
 					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
-					//cout<<"mensaje enviado: "<<mensaje.value<<endl;
-					readMsj(destinationSocket,sizeof(recibido), &recibido);
-					//cout<<"Mensaje recibido: "<<recibido.value<<endl;
-				}
+					readMsj(destinationSocket, sizeof(recibido), &recibido);
+				} else
+					cout << "Primero tenes que conectarte" << endl;
 				printMenu(messagesList);
 		}
 	}
 
 	logWriter->writeUserDidTerminateApp();
-	prepareForExit(xmlLoader, parser, logWriter, "EXIT_SUCCESS");
+	prepareForExit(xmlLoader, parser, logWriter);
 	return EXIT_SUCCESS;
 }

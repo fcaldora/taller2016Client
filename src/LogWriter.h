@@ -28,10 +28,10 @@ public:
 	void writeConnectionErrorDescription(string description);
 	void writeUserHasDisconnectSuccessfully();
 	void writeErrorConnectionHasClosed();
-	void writeErrorInSendingMessage(char *messageID);
-	void writeMessageSentSuccessfully(char *messageID);
+	void writeErrorInSendingMessage(clientMsj *message);
+	void writeMessageSentSuccessfully(clientMsj *message);
 	void writeErrorInReceivingMessageWithID(char *messageID);
-	void writeReceivedSuccessfullyMessageWithID(char *messageID);
+	void writeReceivedSuccessfullyMessageWithID(clientMsj *message);
 	void writeUserDidTerminateApp();
 	void writeMessagesIDAreDuplicated();
 
@@ -39,6 +39,7 @@ private:
 	LogLevelType logLevel;
 	ofstream logFile;
 	void writeLogInFile(string error);
+	char* commentForMessage(char *headerText, clientMsj *message);
 };
 
 #endif /* ERRORLOGSWRITER_H_ */

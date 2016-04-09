@@ -88,7 +88,7 @@ void LogWriter::writeErrorConnectionHasClosed() {
 }
 
 void LogWriter::writeErrorInReceivingMessageWithID(char *messageID) {
-	char* str1 = "Error: no se pudo recibir el mensaje con Id:";
+	char* str1 = "Error: no se pudo recibir el mensaje con ID:";
 	char* str2 = messageID;
 
 	char * str3 = (char *) malloc(1 + strlen(str1)+ strlen(str2) );
@@ -98,43 +98,47 @@ void LogWriter::writeErrorInReceivingMessageWithID(char *messageID) {
 	free(str3);
 }
 
-void LogWriter::writeReceivedSuccessfullyMessageWithID(char *messageID) {
+void LogWriter::writeReceivedSuccessfullyMessageWithID(clientMsj *message) {
 	if(this->logLevel == LogLevelTypeOnlyErrors)
 		return;
 
-	char* str1 = "Se recibio satisfactoriamente el mensaje con ID:";
-	char* str2 = messageID;
-
-	char * str3 = (char *) malloc(1 + strlen(str1)+ strlen(str2) );
-	strcpy(str3, str1);
-	strcat(str3, str2);
-	writeLogInFile(str3);
-	free(str3);
+	char *log = commentForMessage("Se recibio satisfactoriamente el mensaje con ID:", message);
+	writeLogInFile(log);
+	free(log);
 }
 
-void LogWriter::writeErrorInSendingMessage(char *messageID) {
-	char* str1 = "Error: no se pudo enviar el mensaje con Id:";
-	char* str2 = messageID;
+void LogWriter::writeErrorInSendingMessage(clientMsj *message) {
+	char *error = commentForMessage("Error: no se pudo enviar el mensaje con Id:", message);
 
-	char * str3 = (char *) malloc(1 + strlen(str1)+ strlen(str2) );
-	strcpy(str3, str1);
-	strcat(str3, str2);
-	writeLogInFile(str3);
-	free(str3);
+	writeLogInFile(error);
+	free(error);
 }
 
-void LogWriter::writeMessageSentSuccessfully(char *messageID) {
+void LogWriter::writeMessageSentSuccessfully(clientMsj *message) {
 	if(this->logLevel == LogLevelTypeOnlyErrors)
 		return;
 
-	char* str1 = "Se envio satisfactoriamente el mensaje con Id:";
-	char* str2 = messageID;
+	char *log = commentForMessage("Se envio satisfactoriamente el mensaje con Id:", message);
+	writeLogInFile(log);
+	free(log);
+}
 
-	char * str3 = (char *) malloc(1 + strlen(str1)+ strlen(str2) );
-	strcpy(str3, str1);
-	strcat(str3, str2);
-	writeLogInFile(str3);
-	free(str3);
+char * LogWriter::commentForMessage(char *headerText, clientMsj *message) {
+	char* str1 = headerText;
+	char* messageID = message->id;
+	char *str2 = " tipo:";
+	char *messageType = message->type;
+	char *str3 = " valor:";
+	char *messageValue = message->value;
+
+	char * str4 = (char *) malloc(1 + strlen(str1)+ strlen(messageID)+ strlen(str2)+ strlen(messageType)+ strlen(str3)+ strlen(messageValue));
+	strcpy(str4, str1);
+	strcat(str4, messageID);
+	strcat(str4, str2);
+	strcat(str4, messageType);
+	strcat(str4, str3);
+	strcat(str4, messageValue);
+	return str4;
 }
 
 void LogWriter::writeUserDidTerminateApp() {
