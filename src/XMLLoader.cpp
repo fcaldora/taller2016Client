@@ -1,20 +1,19 @@
-#include "CargadorXML.h"
+#include "XMLLoader.h"
 
 #include <iostream>
 #include <sstream>
 #include <arpa/inet.h>
 #include "Constants.h"
 
-XMLLoader::XMLLoader() {
-
+XMLLoader::XMLLoader(LogWriter *logWriter) {
+	this->logWriter = logWriter;
 }
 
 bool XMLLoader::clientXMLIsValid(const char *fileName){
 	TiXmlDocument xmlFile(fileName);
 
 	if(!xmlFile.LoadFile()) {
-		cout << "NOT LOAD FILE" << endl;
-		//this->errorLogWriter->writeNotFoundFileForNameError(fileName);
+		this->logWriter->writeNotFoundFileErrorForFileName(fileName);
 		xmlFile.Clear();
 		return false;
 	}
@@ -31,84 +30,74 @@ bool XMLLoader::clientXMLIsValid(const char *fileName){
 bool XMLLoader::clientXMLHasValidElements(TiXmlDocument xmlFile) {
 	TiXmlElement *client = xmlFile.FirstChildElement(kClientTag);
 	if (client == NULL){
-		cout << "client NULL" << endl;
-		//this->errorLogWriter->writeNotFoundElementInXML("Servidor");
+		this->logWriter->writeNotFoundElementInXML(kClientTag);
 		return false;
 	}
 
 	TiXmlElement *connection = client->FirstChildElement(kConnectionTag);
 	if (connection == NULL) {
-		cout << "connection NULL" << endl;
-		//this->errorLogWriter->writeNotFoundElementInXML("CantidadMaximaClientes");
+		this->logWriter->writeNotFoundElementInXML(kConnectionTag);
 		return false;
 	} else {
 		TiXmlElement *clientIP = connection->FirstChildElement(kIPTag);
 		if (clientIP == NULL){
-			cout << "client IP NULL" << endl;
+			this->logWriter->writeNotFoundElementInXML(kIPTag);
 			return false;
 		}
 
 		TiXmlElement *clientPort = clientIP->NextSiblingElement(kPortTag);
 		if (clientPort == NULL){
-			cout << "client Port NULL" << endl;
+			this->logWriter->writeNotFoundElementInXML(kPortTag);
 			return false;
 		}
 	}
 
 	TiXmlElement *messages = connection->NextSiblingElement(kMessagesTag);
 	if (messages == NULL) {
-		cout << "messages NULL" << endl;
-		//this->errorLogWriter->writeNotFoundElementInXML("Puerto");
+		this->logWriter->writeNotFoundElementInXML(kMessagesTag);
 		return false;
 	}
 
 	TiXmlElement *firstMessage = messages->FirstChildElement(kMessageTag);
 	if (firstMessage == NULL){
-		cout << "first message NULL" << endl;
-
+		this->logWriter->writeNotFoundElementInXML(kMessageTag);
 		return false;
 	}
 
 	TiXmlElement *firstMessageID = firstMessage->FirstChildElement(kMessageIDTag);
 	if (firstMessageID == NULL) {
-		cout << "first message ID NULL" << endl;
-
+		this->logWriter->writeNotFoundElementInXML(kMessageIDTag);
 		return false;
 	}
 
 	TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
 	if (firstMessageType == NULL) {
-		cout << "first message type NULL" << endl;
-
+		this->logWriter->writeNotFoundElementInXML(kMesssageTypeTag);
 		return false;
 	}
 
 	TiXmlElement *firstMessageValue = firstMessageType->NextSiblingElement(kMessageValueTag);
 	if (firstMessageValue == NULL) {
-		cout << "first message value NULL" << endl;
-
+		this->logWriter->writeNotFoundElementInXML(kMessageValueTag);
 		return false;
 	}
 
 	for(TiXmlElement *message = firstMessage->NextSiblingElement(kMessageTag); message != NULL; message = message->NextSiblingElement(kMessageTag)) {
 		TiXmlElement *firstMessageID = firstMessage->FirstChildElement(kMessageIDTag);
 		if (firstMessageID == NULL) {
-			cout << "first message ID NULL" << endl;
-
+			this->logWriter->writeNotFoundElementInXML(kMessageIDTag);
 			return false;
 		}
 
 		TiXmlElement *firstMessageType = firstMessageID->NextSiblingElement(kMesssageTypeTag);
 		if (firstMessageType == NULL) {
-			cout << "first message type NULL" << endl;
-
+			this->logWriter->writeNotFoundElementInXML(kMesssageTypeTag);
 			return false;
 		}
 
 		TiXmlElement *firstMessageValue = firstMessageType->NextSiblingElement(kMessageValueTag);
 		if (firstMessageValue == NULL) {
-			cout << "first message value NULL" << endl;
-
+			this->logWriter->writeNotFoundElementInXML(kMessageValueTag);
 			return false;
 		}
 	}
@@ -122,7 +111,7 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 	struct sockaddr_in sa;
 	int success = inet_pton(AF_INET, clientIP, &(sa.sin_addr));
 	if (success != 1){
-		cout << "invalid IP" << endl;
+		this->logWriter->writeInvalidadValueForElementInXML(kIPTag);
 		return false;
 	}
 
@@ -132,9 +121,7 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 	unsigned int portIntValue;
 	portStrValue >> portIntValue;
 	if (portIntValue <= 0 || portIntValue > kMaxNumberOfValidPort) {
-		cout << "invalid Port" << endl;
-
-		//this->errorLogWriter->writeValueErrorForElementInXML("Puerto");
+		this->logWriter->writeInvalidadValueForElementInXML(kPortTag);
 		return false;
 	}
 
@@ -145,7 +132,7 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 		firstMessageTypeStreamString << firstMessageType;
 		string firstMessageTypeString = firstMessageTypeStreamString.str();
 		if ((firstMessageTypeString.compare(kMessageTypeInt) != 0) && (firstMessageTypeString.compare(kMessageTypeString) != 0) && (firstMessageTypeString.compare(kMessageTypeChar) != 0) && (firstMessageTypeString.compare(kMessageTypeDouble) != 0)) {
-			cout << "invalid Message Type" << endl;
+			this->logWriter->writeInvalidadValueForElementInXML(kMesssageTypeTag);
 			return false;
 		}
 	}

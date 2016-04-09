@@ -8,11 +8,11 @@
 #include <sys/unistd.h>
 #include <string.h>
 #include "XmlParser.h"
-#include "CargadorXML.h"
+#include "XMLLoader.h"
 #include <list>
 #include <sys/time.h>
 #include <pthread.h>
-#include "ErrorLogsWriter.h"
+#include "LogWriter.h"
 
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
@@ -23,20 +23,21 @@ list<clientMsj*> messagesList;
 pthread_t clientThreadID[3];
 XMLLoader *xmlLoader;
 XmlParser *parser;
-ErrorLogsWriter *erroLogsWriter;
+LogWriter *logWriter;
 
 struct thread_args {
     int socketConnection;
 }args;
 
-void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, ErrorLogsWriter *erroLogsWriter, string message) {
+void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWriter, string message) {
 	cout << message << endl;
 	delete xmlLoader;
 	delete xmlParser;
+	delete logWriter;
 }
 
 //Esta funcion va en la opcion del menu que dice "conectar".
-int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
+int initializeClient(string destinationIp, int port) {
 	struct sockaddr_in remoteSocketInfo;
 	struct hostent *hPtr;
 	int socketHandle;
@@ -49,8 +50,9 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 	//ip invalida.
 	if ((hPtr = gethostbyname(remoteHost)) == NULL) {
 		cerr << "System DNS name resolution not configured properly." << endl;
-		*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
-		prepareForExit(xmlLoader, parser, erroLogsWriter, "System DNS name resolution not configured properly.");
+		logWriter->writeConnectionErrorDescription("Error en la IP");
+		//*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
+		prepareForExit(xmlLoader, parser, logWriter, "System DNS name resolution not configured properly.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -58,7 +60,8 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 
 	if ((socketHandle = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		close(socketHandle);
-		prepareForExit(xmlLoader, parser, erroLogsWriter, "SOCKET FAILURE");
+		logWriter->writeConnectionErrorDescription("Error creando el socket");
+		prepareForExit(xmlLoader, parser, logWriter, "SOCKET FAILURE");
 		exit(EXIT_FAILURE);
 	}
 
@@ -71,13 +74,12 @@ int initializeClient(string destinationIp, int port, ofstream* archivoErrores) {
 	if (connect(socketHandle, (struct sockaddr *) &remoteSocketInfo,
 			sizeof(sockaddr_in)) < 0) {
 		close(socketHandle);
-		*archivoErrores<<"Error. Puerto "<<portNumber<<" inválido."<<endl;
-		prepareForExit(xmlLoader, parser, erroLogsWriter, "CONNECT FAILURE");
+		logWriter->writeConnectionErrorDescription("Error en el puerto");
+		prepareForExit(xmlLoader, parser, logWriter, "CONNECT FAILURE");
 		exit(EXIT_FAILURE);
-	}else{
-		cout<<"Connected!"<<endl;
 	}
 
+	cout<<"Connected!"<<endl;
 	return socketHandle;
 }
 
@@ -86,14 +88,17 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 	int res = 0;
 	while(enviados<bytesAEnviar){
 		res = send(socket, &(mensaje)[enviados], bytesAEnviar - enviados, MSG_WAITALL);
-		if (res == 0){ //Se cerró la conexion. Escribir en log de errores de conexion.
+		if (res == 0){
+			logWriter->writeErrorConnectionHasClosed();
 			return 0;
-		}else if(res<0){ //Error en el envio del mensaje. Escribir en el log.
+		}else if(res<0){
+			logWriter->writeErrorInSendingMessage(mensaje->id);
 			return -1;
 		}else{
 			enviados += res;
 		}
 	}
+	logWriter->writeMessageSentSuccessfully(mensaje->id);
 	return enviados;
 }
 
@@ -111,26 +116,27 @@ void printMenu(list<clientMsj*> listaMensajes){
 	cout<<"Ingresar opcion: ";
 }
 
-int readMsj(int socket, int bytesARecibir, clientMsj* msj, ofstream* archivoErrores){
+int readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	int totalBytesRecibidos = 0;
 	int recibidos = 0;
 	while (totalBytesRecibidos < bytesARecibir){
 		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
-			*archivoErrores<<"Error al recibir mensaje"<<endl;
+			logWriter->writeErrorInReceivingMessageWithID(msj->id);
 			return -1;
-		}else if(recibidos == 0){//se corto la conexion desde el lado del servidor.
+		}else if(recibidos == 0){
 				close(socket);
-				*archivoErrores<<"Se cerro la conexion con el servidor"<<endl;
+				logWriter->writeErrorConnectionHasClosed();
 				return -1;
 		}else{
 			totalBytesRecibidos += recibidos;
 		}
 	}
+	logWriter->writeReceivedSuccessfullyMessageWithID(msj->id);
 	return 1;
 }
 
-void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
+void loadMessages(list<clientMsj*> &listaMensajes, XmlParser *parser){
 	int cantidadMensajes = parser->getNumberOfMessages();
 	int contador;
 	for(contador = 0; contador<cantidadMensajes;contador++){
@@ -140,7 +146,7 @@ void cargarMensajes(list<clientMsj*> &listaMensajes, XmlParser *parser){
 	}
 }
 
-void ciclar(int socket, int milisegundos, XmlParser *parser, ofstream* erroresConexion){
+void ciclar(int socket, int milisegundos, XmlParser *parser){
 	struct timeval tiempoInicial, tiempoActual;
 	bool fin = false;
 	int contador = 0;
@@ -167,12 +173,12 @@ void ciclar(int socket, int milisegundos, XmlParser *parser, ofstream* erroresCo
 
 int main(int argc, char* argv[]) {
 	const char *fileName;
-	xmlLoader = new XMLLoader();
-	erroLogsWriter = new ErrorLogsWriter();
+	logWriter = new LogWriter();
+	xmlLoader = new XMLLoader(logWriter);
 
 	if(argc != 2){
 		fileName = kClientTestFile;
-		cout<<"Falta escribir el nombre del archivo del cliente, se usara uno por defecto."<<endl;
+		logWriter->writeUserDidnotEnterFileName();
 	} else {
 		fileName = argv[1];
 		if (!xmlLoader->clientXMLIsValid(fileName)){
@@ -180,43 +186,43 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	ofstream erroresXml; //Log de errores de mala escritura del XML.
-	ofstream erroresConexion;
-	erroresConexion.open("ErroresConexion",ios_base::app);
-	ofstream erroresDatos;
-	erroresDatos.open("erroresEnDatos",ios_base::app);
-	parser = new XmlParser(fileName, &erroresXml);
+	parser = new XmlParser(fileName);
+	logWriter->setLogLevel(parser->getLogLevel());
 	string serverIP = parser->getServerIP();
 	int serverPort = parser->getServerPort();
 
-	cargarMensajes(messagesList, parser);
+	loadMessages(messagesList, parser);
 	int destinationSocket;
 
 	printMenu(messagesList);
-	unsigned int opcion;
-	bool fin = false;
+	unsigned int userDidChooseOption;
+	bool appShouldExit = false;
 	clientMsj msjDisconnection;
 	clientMsj recibido;
 	strncpy(msjDisconnection.id, "1",20);
 	strncpy(msjDisconnection.type, "STRING",20);
 	strncpy(msjDisconnection.value, "Desconectado",20);
-	while (!fin){
-		cin>>opcion;
-		switch(opcion){
+
+	while (!appShouldExit){
+		cin>>userDidChooseOption;
+		logWriter->writeUserDidSelectOption(userDidChooseOption);
+		switch(userDidChooseOption){
 			case 1:
-				destinationSocket = initializeClient(serverIP, serverPort, &erroresConexion);
+				destinationSocket = initializeClient(serverIP, serverPort);
+				logWriter->writeUserHasConnectedSuccessfully();
 				printMenu(messagesList);
 				break;
 			case 2:
 				sendMsj(destinationSocket, sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket, sizeof(recibido), &recibido, &erroresConexion);
+				readMsj(destinationSocket, sizeof(recibido), &recibido);
 				close(destinationSocket);
+				logWriter->writeUserHasDisconnectSuccessfully();
 				printMenu(messagesList);
 				break;
 			case 3:
-				fin = true;
+				appShouldExit = true;
 				sendMsj(destinationSocket,sizeof(msjDisconnection), &msjDisconnection);
-				readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
+				readMsj(destinationSocket,sizeof(recibido), &recibido);
 				close(destinationSocket);
 				break;
 			case 4:
@@ -224,24 +230,25 @@ int main(int argc, char* argv[]) {
 				cout<<"Indicar cantidad de milisegundos: "<<endl;
 				int milisegundos;
 				cin>>milisegundos;
-				ciclar(destinationSocket, milisegundos, parser, &erroresConexion);
+				ciclar(destinationSocket, milisegundos, parser);
 				printMenu(messagesList);
 				break;
 			default:
-				if(opcion > messagesList.size() + 4){
+				if(userDidChooseOption > messagesList.size() + 4){
 					cout <<"Opcion incorrecta"<<endl;
 				}else{
 					clientMsj mensaje;
-					parser->getMessage(mensaje, opcion - 5);
+					parser->getMessage(mensaje, userDidChooseOption - 5);
 					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
 					cout<<"mensaje enviado: "<<mensaje.value<<endl;
-					readMsj(destinationSocket,sizeof(recibido), &recibido, &erroresConexion);
+					readMsj(destinationSocket,sizeof(recibido), &recibido);
 					cout<<"Mensaje recibido: "<<recibido.value<<endl;
 				}
 				printMenu(messagesList);
 		}
 	}
 
-	prepareForExit(xmlLoader, parser, erroLogsWriter, "EXIT_SUCCESS");
+	logWriter->writeUserDidTerminateApp();
+	prepareForExit(xmlLoader, parser, logWriter, "EXIT_SUCCESS");
 	return EXIT_SUCCESS;
 }
