@@ -36,6 +36,9 @@ using namespace std;
 #define kMessageTypeString "STRING"
 #define kMessageTypeChar "CHAR"
 
+#define kServerFullType "server_full"
+#define kConnectionSuccessfulType "connection_successful"
+
 #define kLongChar 20
 #define kDefaultPort 8080
 

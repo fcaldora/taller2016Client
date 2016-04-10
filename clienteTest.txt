@@ -3,7 +3,7 @@
 		<nivelDeLog>2</nivelDeLog>
 	</configuracion>
 	<conexion>
-		<IP>127.0.0.1</IP>
+		<IP>192.168.0.17</IP>
 		<puerto>8080</puerto>
 	</conexion>
 	<mensajes>

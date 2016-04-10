@@ -1,8 +1,5 @@
 Falta escribir el nombre del archivo del cliente, se usara uno por defecto.
 El usuario eligio la opcion 1.
-El usuario se conecto satisfactoriamente.
-El usuario eligio la opcion 5.
-Se envio satisfactoriamente el mensaje con Id:Mensaje1 tipo:INT valor:gustavo
-Error: se cerro la conexion
-El usuario eligio la opcion 3.
-El usuario cerro la aplicacion
+Se recibio satisfactoriamente el mensaje con ID:0 tipo:server_full valor:Try again later
+El usuario se desconecto satisfactoriamente.
+Error: no se pudo conectar porque el servidor esta lleno

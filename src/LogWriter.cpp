@@ -69,6 +69,11 @@ void LogWriter::writeUserHasConnectedSuccessfully() {
 	writeLogInFile(log);
 }
 
+void LogWriter::writeCannotConnectDueToServerFull() {
+	string log = "Error: no se pudo conectar porque el servidor esta lleno";
+	writeLogInFile(log);
+}
+
 void LogWriter::writeConnectionErrorDescription(string description) {
 	string error = "Hubo un error mientras el usuario se conectaba: " + description + "";
 	writeLogInFile(error);
@@ -98,7 +103,7 @@ void LogWriter::writeErrorInReceivingMessageWithID(char *messageID) {
 	free(str3);
 }
 
-void LogWriter::writeReceivedSuccessfullyMessageWithID(clientMsj *message) {
+void LogWriter::writeReceivedSuccessfullyMessage(clientMsj *message) {
 	if(this->logLevel == LogLevelTypeOnlyErrors)
 		return;
 

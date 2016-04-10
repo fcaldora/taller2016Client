@@ -31,9 +31,10 @@ public:
 	void writeErrorInSendingMessage(clientMsj *message);
 	void writeMessageSentSuccessfully(clientMsj *message);
 	void writeErrorInReceivingMessageWithID(char *messageID);
-	void writeReceivedSuccessfullyMessageWithID(clientMsj *message);
+	void writeReceivedSuccessfullyMessage(clientMsj *message);
 	void writeUserDidTerminateApp();
 	void writeMessagesIDAreDuplicated();
+	void writeCannotConnectDueToServerFull();
 
 private:
 	LogLevelType logLevel;

@@ -38,6 +38,12 @@ void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWr
 	delete logWriter;
 }
 
+void closeSocket(int socket) {
+	close(socket);
+	logWriter->writeUserHasDisconnectSuccessfully();
+	userIsConnected = false;
+}
+
 //Esta funcion va en la opcion del menu que dice "conectar".
 int initializeClient(string destinationIp, int port) {
 	struct sockaddr_in remoteSocketInfo;
@@ -83,8 +89,8 @@ int initializeClient(string destinationIp, int port) {
 		//exit(EXIT_FAILURE);
 	}
 
-	userIsConnected = true;
-	logWriter->writeUserHasConnectedSuccessfully();
+	//userIsConnected = true;
+	//logWriter->writeUserHasConnectedSuccessfully();
 	return socketHandle;
 }
 
@@ -122,25 +128,26 @@ void printMenu(list<clientMsj*> listaMensajes){
 	cout<<"Ingresar opcion: ";
 }
 
-int readMsj(int socket, int bytesARecibir, clientMsj* msj){
+char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	int totalBytesRecibidos = 0;
 	int recibidos = 0;
 	while (totalBytesRecibidos < bytesARecibir){
 		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			logWriter->writeErrorInReceivingMessageWithID(msj->id);
-			return -1;
+			return "";
 		}else if(recibidos == 0){
 				close(socket);
 				userIsConnected = false;
 				logWriter->writeErrorConnectionHasClosed();
-				return -1;
+				return "";
 		}else{
 			totalBytesRecibidos += recibidos;
 		}
 	}
-	logWriter->writeReceivedSuccessfullyMessageWithID(msj);
-	return 1;
+
+	logWriter->writeReceivedSuccessfullyMessage(msj);
+	return msj->type;
 }
 
 void loadMessages(list<clientMsj*> &listaMensajes, XmlParser *parser){
@@ -218,15 +225,24 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeConnect:
 				if (!userIsConnected) {
 					destinationSocket = initializeClient(serverIP, serverPort);
+					char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
+					if (strcmp(messageType, kServerFullType) == 0) {
+						closeSocket(destinationSocket);
+						logWriter->writeCannotConnectDueToServerFull();
+					} else {
+						userIsConnected = true;
+						logWriter->writeUserHasConnectedSuccessfully();
+					}
 				} else
 					cout << "Ya estas conectado!!" << endl;
 				printMenu(messagesList);
 				break;
 			case MenuOptionChoosedTypeDisconnect:
 				if (userIsConnected) {
-					close(destinationSocket);
+					closeSocket(destinationSocket);
+					/*close(destinationSocket);
 					logWriter->writeUserHasDisconnectSuccessfully();
-					userIsConnected = false;
+					userIsConnected = false;*/
 				} else
 					cout << "Tenes que conectarte primero" << endl;
 				printMenu(messagesList);
