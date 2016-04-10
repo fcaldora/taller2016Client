@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <sys/unistd.h>
 #include <string.h>
+#include <thread>
 #include "XmlParser.h"
 #include "XMLLoader.h"
 #include <list>
 #include <sys/time.h>
-#include <pthread.h>
 #include "LogWriter.h"
 
 #define MAXHOSTNAME 256
@@ -20,6 +20,8 @@
 using namespace std;
 
 list<clientMsj*> messagesList;
+list<clientMsj> messagesToSend;
+
 XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
@@ -88,6 +90,9 @@ int initializeClient(string destinationIp, int port) {
 	return socketHandle;
 }
 
+
+
+
 int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 	int enviados = 0;
 	int res = 0;
@@ -106,6 +111,16 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 		}
 	}
 	return enviados;
+}
+
+void *desencolarMensajesAenviar(int socket){
+	while (1){
+			if(!messagesToSend.empty()){
+				clientMsj mensaje = messagesToSend.front();
+				sendMsj(socket, sizeof(mensaje),&mensaje);
+				messagesToSend.pop_front();
+			}
+		}
 }
 
 void printMenu(list<clientMsj*> listaMensajes){
@@ -209,7 +224,7 @@ int main(int argc, char* argv[]) {
 	unsigned int userDidChooseOption;
 	bool appShouldExit = false;
 	clientMsj recibido;
-
+	std::thread desencolarMensajesThread;
 	while (!appShouldExit){
 		cin>>userDidChooseOption;
 		logWriter->writeUserDidSelectOption(userDidChooseOption);
@@ -218,6 +233,7 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeConnect:
 				if (!userIsConnected) {
 					destinationSocket = initializeClient(serverIP, serverPort);
+					desencolarMensajesThread = std::thread(desencolarMensajesAenviar, destinationSocket);
 				} else
 					cout << "Ya estas conectado!!" << endl;
 				printMenu(messagesList);
@@ -234,6 +250,7 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeExit:
 				appShouldExit = true;
 				close(destinationSocket);
+				desencolarMensajesThread.detach();
 				break;
 			case MenuOptionChoosedTypeCycle:
 				if (userIsConnected) {
@@ -252,7 +269,7 @@ int main(int argc, char* argv[]) {
 				}else if (userIsConnected){
 					clientMsj mensaje;
 					parser->getMessage(mensaje, userDidChooseOption - 5);
-					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
+					messagesToSend.push_back(mensaje);
 					readMsj(destinationSocket, sizeof(recibido), &recibido);
 				} else
 					cout << "Primero tenes que conectarte" << endl;
