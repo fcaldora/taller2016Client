@@ -90,9 +90,6 @@ int initializeClient(string destinationIp, int port) {
 	return socketHandle;
 }
 
-
-
-
 int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 	int enviados = 0;
 	int res = 0;
@@ -278,7 +275,8 @@ int main(int argc, char* argv[]) {
 				}else if (userIsConnected){
 					clientMsj mensaje;
 					parser->getMessage(mensaje, userDidChooseOption - 5);
-					messagesToSend.push_back(mensaje);
+					//messagesToSend.push_back(mensaje);
+					sendMsj(destinationSocket, sizeof(mensaje),&mensaje);
 					readMsj(destinationSocket, sizeof(recibido), &recibido);
 				} else
 					cout << "Primero tenes que conectarte" << endl;
