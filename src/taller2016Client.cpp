@@ -11,7 +11,6 @@
 #include "XMLLoader.h"
 #include <list>
 #include <sys/time.h>
-#include <pthread.h>
 #include "LogWriter.h"
 
 #define MAXHOSTNAME 256
@@ -20,6 +19,8 @@
 using namespace std;
 
 list<clientMsj*> messagesList;
+list<clientMsj> messagesToSend;
+
 XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
@@ -40,7 +41,6 @@ void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWr
 
 void closeSocket(int socket) {
 	close(socket);
-	logWriter->writeUserHasDisconnectSuccessfully();
 	userIsConnected = false;
 }
 
@@ -85,14 +85,13 @@ int initializeClient(string destinationIp, int port) {
 		close(socketHandle);
 		logWriter->writeConnectionErrorDescription("Intenta mas tarde");
 		return 0;
-		//prepareForExit(xmlLoader, parser, logWriter);
-		//exit(EXIT_FAILURE);
 	}
 
-	//userIsConnected = true;
-	//logWriter->writeUserHasConnectedSuccessfully();
 	return socketHandle;
 }
+
+
+
 
 int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 	int enviados = 0;
@@ -112,6 +111,16 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 		}
 	}
 	return enviados;
+}
+
+void *desencolarMensajesAenviar(int socket){
+	while (1){
+			if(!messagesToSend.empty()){
+				clientMsj mensaje = messagesToSend.front();
+				sendMsj(socket, sizeof(mensaje),&mensaje);
+				messagesToSend.pop_front();
+			}
+		}
 }
 
 void printMenu(list<clientMsj*> listaMensajes){
@@ -216,7 +225,7 @@ int main(int argc, char* argv[]) {
 	unsigned int userDidChooseOption;
 	bool appShouldExit = false;
 	clientMsj recibido;
-
+	//std::thread desencolarMensajesThread;
 	while (!appShouldExit){
 		cin>>userDidChooseOption;
 		logWriter->writeUserDidSelectOption(userDidChooseOption);
@@ -233,6 +242,8 @@ int main(int argc, char* argv[]) {
 						userIsConnected = true;
 						logWriter->writeUserHasConnectedSuccessfully();
 					}
+					//desencolarMensajesThread = std::thread(desencolarMensajesAenviar, destinationSocket);
+
 				} else
 					cout << "Ya estas conectado!!" << endl;
 				printMenu(messagesList);
@@ -240,9 +251,7 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeDisconnect:
 				if (userIsConnected) {
 					closeSocket(destinationSocket);
-					/*close(destinationSocket);
 					logWriter->writeUserHasDisconnectSuccessfully();
-					userIsConnected = false;*/
 				} else
 					cout << "Tenes que conectarte primero" << endl;
 				printMenu(messagesList);
@@ -250,6 +259,7 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeExit:
 				appShouldExit = true;
 				close(destinationSocket);
+				//desencolarMensajesThread.detach();
 				break;
 			case MenuOptionChoosedTypeCycle:
 				if (userIsConnected) {
@@ -268,7 +278,7 @@ int main(int argc, char* argv[]) {
 				}else if (userIsConnected){
 					clientMsj mensaje;
 					parser->getMessage(mensaje, userDidChooseOption - 5);
-					sendMsj(destinationSocket, sizeof(mensaje), &mensaje);
+					messagesToSend.push_back(mensaje);
 					readMsj(destinationSocket, sizeof(recibido), &recibido);
 				} else
 					cout << "Primero tenes que conectarte" << endl;

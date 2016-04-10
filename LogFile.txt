@@ -1,5 +1,4 @@
 Falta escribir el nombre del archivo del cliente, se usara uno por defecto.
 El usuario eligio la opcion 1.
 Se recibio satisfactoriamente el mensaje con ID:0 tipo:server_full valor:Try again later
-El usuario se desconecto satisfactoriamente.
 Error: no se pudo conectar porque el servidor esta lleno
