@@ -171,13 +171,16 @@ void ciclar(int socket, int milisegundos, XmlParser *parser){
 	bool fin = false;
 	int contador = 0;
 	int cantidadMensajesEnviados = 0;
+	int res = 0;
 	long double cantidadMilisegundosActual;
 	gettimeofday(&tiempoInicial, NULL);
 	long double cantidadMilisegundosFinal = (tiempoInicial.tv_sec * 1000) + milisegundos;
 	clientMsj mensaje, recibido;
 	while(!fin){
 		parser->getMessage(mensaje, contador);
-		sendMsj(socket,sizeof(clientMsj),&mensaje);
+		res = sendMsj(socket,sizeof(clientMsj),&mensaje);
+		if(res <= 0)
+			return; //Hubo un error. Hay que cerrar esta conexion.
 		readMsj(socket,sizeof(clientMsj), &recibido);
 		cantidadMensajesEnviados++;
 		contador++;
@@ -205,10 +208,10 @@ int main(int argc, char* argv[]) {
 		fileName = argv[1];
 		if (!xmlLoader->clientXMLIsValid(fileName)){
 			fileName = kClientTestFile;
+			xmlLoader->clientXMLIsValid(fileName);
 		}
 	}
 
-	xmlLoader->clientXMLIsValid(fileName);
 
 	parser = new XmlParser(fileName);
 	logWriter->setLogLevel(parser->getLogLevel());
