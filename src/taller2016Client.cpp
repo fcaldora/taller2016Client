@@ -290,6 +290,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	for(int i = 0; i<parser->getNumberOfMessages();i++){
+		free(messagesList.front());
+		messagesList.pop_front();
+	}
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
 	return EXIT_SUCCESS;
