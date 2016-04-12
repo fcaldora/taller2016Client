@@ -83,7 +83,7 @@ int initializeClient(string destinationIp, int port) {
 			sizeof(sockaddr_in)) < 0) {
 
 		close(socketHandle);
-		logWriter->writeConnectionErrorDescription("Intenta mas tarde");
+		logWriter->writeConnectionErrorDescription("Puede que el servidor este apagado. Intenta mas tarde");
 		return 0;
 	}
 
@@ -102,7 +102,7 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 		}else if(res<0){
 			logWriter->writeErrorInSendingMessage(mensaje);
 			return -1;
-		}else{
+		}else if (res > 0){
 			enviados += res;
 			logWriter->writeMessageSentSuccessfully(mensaje);
 		}
@@ -234,14 +234,17 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeConnect:
 				if (!userIsConnected) {
 					destinationSocket = initializeClient(serverIP, serverPort);
-					char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
-					if (strcmp(messageType, kServerFullType) == 0) {
-						closeSocket(destinationSocket);
-						logWriter->writeCannotConnectDueToServerFull();
-					} else {
-						userIsConnected = true;
-						logWriter->writeUserHasConnectedSuccessfully();
+					if (destinationSocket > 0) {
+						char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
+						if (strcmp(messageType, kServerFullType) == 0) {
+							closeSocket(destinationSocket);
+							logWriter->writeCannotConnectDueToServerFull();
+						} else {
+							userIsConnected = true;
+							logWriter->writeUserHasConnectedSuccessfully();
+						}
 					}
+
 					//desencolarMensajesThread = std::thread(desencolarMensajesAenviar, destinationSocket);
 
 				} else
