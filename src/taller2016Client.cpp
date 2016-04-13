@@ -12,6 +12,7 @@
 #include <list>
 #include <sys/time.h>
 #include "LogWriter.h"
+#include <errno.h>
 
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
@@ -86,7 +87,12 @@ int initializeClient(string destinationIp, int port) {
 		logWriter->writeConnectionErrorDescription("Puede que el servidor este apagado. Intenta mas tarde");
 		return 0;
 	}
-
+	struct timeval timeOut;
+	timeOut.tv_sec = 10;
+	timeOut.tv_usec = 0;
+	if(setsockopt(socketHandle, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(struct timeval))!=0)
+		cout<<"Error al settear el timeout"<<endl;
+		cout<<strerror(errno)<<endl;
 	return socketHandle;
 }
 
