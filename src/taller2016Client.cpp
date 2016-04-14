@@ -147,6 +147,7 @@ char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
 		if (recibidos < 0){
 			logWriter->writeErrorInReceivingMessageWithID(msj->id);
+			userIsConnected = false;
 			return "";
 		}else if(recibidos == 0){
 				close(socket);

@@ -1,5 +1,6 @@
 #include "XMLLoader.h"
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <arpa/inet.h>
@@ -131,6 +132,7 @@ bool XMLLoader::clientXMLHasValidValues(TiXmlDocument xmlFile){
 		this->messageIDList.push_back(messageID);
 
 		string messageType = stringFromChar(message->FirstChildElement(kMessageTypeTag)->GetText());
+		std::transform(messageType.begin(), messageType.end(), messageType.begin(), ::toupper);
 		if ((messageType.compare(kMessageTypeInt) != 0) && (messageType.compare(kMessageTypeString) != 0) && (messageType.compare(kMessageTypeChar) != 0) && (messageType.compare(kMessageTypeDouble) != 0)) {
 			this->logWriter->writeInvalidValueForElementInXML(kMessageTypeTag);
 			return false;
