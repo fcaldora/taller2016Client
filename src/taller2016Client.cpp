@@ -47,6 +47,9 @@ void closeSocket(int socket) {
 
 //Esta funcion va en la opcion del menu que dice "conectar".
 int initializeClient(string destinationIp, int port) {
+	//Start SDL
+	SDL_Init( SDL_INIT_EVERYTHING ); //Quit SDL
+	SDL_Quit();
 	struct sockaddr_in remoteSocketInfo;
 	struct hostent *hPtr;
 	int socketHandle;

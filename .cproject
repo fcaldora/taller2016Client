@@ -35,6 +35,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1981854741" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.libs.319374423" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" value="SDL"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.510520958" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<option id="gnu.cpp.link.option.other.346367486" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other"/>
