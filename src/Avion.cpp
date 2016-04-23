@@ -24,6 +24,8 @@ bool Avion::loadImage(string pathImage, SDL_Renderer* renderer){
 	}
 	this->height = surfaceAux->h;
 	this->width = surfaceAux->w;
+	//Pongo como color key el cyan (0,255,255) para que se pinte solo el avion.
+	SDL_SetColorKey( surfaceAux, SDL_TRUE, SDL_MapRGB( surfaceAux->format, 0, 255, 255 ) );
 	this->texture = SDL_CreateTextureFromSurface(renderer, surfaceAux);
 	if(this->texture == NULL){
 		cout<<"Error al crear la textura con la imagen del avion"<<endl;
