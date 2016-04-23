@@ -13,7 +13,9 @@
 #include <sys/time.h>
 #include "LogWriter.h"
 #include <errno.h>
-
+#include "Window.h"
+#include "Avion.h"
+#include "Background.h"
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
 
@@ -306,5 +308,33 @@ int main(int argc, char* argv[]) {
 	}
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
+
+	SDL_Init(SDL_INIT_VIDEO);
+	Window window("Prueba", 640, 480);
+	Avion avion("Gustavo", 320, 240);
+	avion.loadImage("avionPrueba.png", window.getRenderer());
+	Background background;
+	background.loadBackground("fondo.png", window.getRenderer());
+	int scrollingOffset = 0;
+	SDL_SetRenderDrawColor( window.getRenderer(), 0xFF, 0xFF, 0xFF, 0xFF );
+	SDL_RenderClear(window.getRenderer());
+	background.paint(window.getRenderer(),0,0);
+	avion.paint(window.getRenderer(), 240, 320);
+	window.paint();
+	SDL_Event event;
+	bool end = false;
+	while (!end){
+		scrollingOffset++;
+		SDL_RenderClear(window.getRenderer());
+		background.paint(window.getRenderer(), 0, scrollingOffset);
+		background.paint(window.getRenderer(), 0, scrollingOffset - background.getWidth());
+		avion.paint(window.getRenderer(), 240, 320);
+		window.paint();
+		if(scrollingOffset > background.getWidth())
+			scrollingOffset = 0;
+		while(SDL_PollEvent( &event ) != 0){
+			end = avion.processEvent(&event);
+		}
+	}
 	return EXIT_SUCCESS;
 }

@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <list>
 #include <vector>
-#include "SDL/SDL.h"
 
 using namespace std;
 
