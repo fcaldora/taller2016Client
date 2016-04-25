@@ -247,10 +247,21 @@ int main(int argc, char* argv[]) {
 				if (!userIsConnected) {
 					destinationSocket = initializeClient(serverIP, serverPort);
 					if (destinationSocket > 0) {
+						string nombre;
+						cout << "Ingrese nombre para conectarse.";
+						cin >> nombre;
+
+						clientMsj inicializacion;
+						strcpy(inicializacion.value,nombre.c_str());
+						sendMsj(destinationSocket,sizeof(inicializacion),&inicializacion);
+
 						char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
 						if (strcmp(messageType, kServerFullType) == 0) {
 							closeSocket(destinationSocket);
 							logWriter->writeCannotConnectDueToServerFull();
+						}else if(strcmp(recibido.type,"error") == 0){
+							closeSocket(destinationSocket);
+							cout<< recibido.value << endl;
 						} else {
 							userIsConnected = true;
 							logWriter->writeUserHasConnectedSuccessfully();
