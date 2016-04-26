@@ -4,6 +4,8 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
+#include <thread>
 #include <stdio.h>
 #include <sys/unistd.h>
 #include <string.h>
@@ -13,7 +15,10 @@
 #include <sys/time.h>
 #include "LogWriter.h"
 #include <errno.h>
+#include <chrono>
 #include "Window.h"
+#include "Object.h"
+#include "Client.h"
 #include "Avion.h"
 #include "Background.h"
 #define MAXHOSTNAME 256
@@ -24,10 +29,18 @@ using namespace std;
 list<clientMsj*> messagesList;
 list<clientMsj> messagesToSend;
 
+list<Object*> objects;
+
 XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
 bool userIsConnected;
+string nombre;
+Client* client;
+Window* window;
+Background* background;
+Avion* avion;
+int scrollingOffset = 0;
 
 enum MenuOptionChoosedType {
 	MenuOptionChoosedTypeConnect = 1,
@@ -49,9 +62,6 @@ void closeSocket(int socket) {
 
 //Esta funcion va en la opcion del menu que dice "conectar".
 int initializeClient(string destinationIp, int port) {
-	//Start SDL
-	SDL_Init( SDL_INIT_EVERYTHING ); //Quit SDL
-	SDL_Quit();
 	struct sockaddr_in remoteSocketInfo;
 	struct hostent *hPtr;
 	int socketHandle;
@@ -93,9 +103,9 @@ int initializeClient(string destinationIp, int port) {
 		return 0;
 	}
 	struct timeval timeOut;
-	timeOut.tv_sec = 10;
+	timeOut.tv_sec = 100;
 	timeOut.tv_usec = 0;
-	if(setsockopt(socketHandle, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(struct timeval))!=0)
+	//if(setsockopt(socketHandle, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(struct timeval))!=0)
 		cout<<"Error al settear el timeout"<<endl;
 		cout<<strerror(errno)<<endl;
 	return socketHandle;
@@ -115,7 +125,7 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 			return -1;
 		}else if (res > 0){
 			enviados += res;
-			logWriter->writeMessageSentSuccessfully(mensaje);
+			//logWriter->writeMessageSentSuccessfully(mensaje);
 		}
 	}
 	return enviados;
@@ -168,6 +178,29 @@ char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	return msj->type;
 }
 
+int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
+	int totalBytesRecibidos = 0;
+	int recibidos = 0;
+	while (totalBytesRecibidos < bytesARecibir){
+		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
+		if (recibidos < 0){
+			userIsConnected = false;
+			return recibidos;
+		}else if(recibidos == 0){
+				close(socket);
+				userIsConnected = false;
+				logWriter->writeErrorConnectionHasClosed();
+				return recibidos;
+		}else{
+			totalBytesRecibidos += recibidos;
+		}
+	}
+
+	return recibidos;
+}
+
+
+
 void loadMessages(list<clientMsj*> &listaMensajes, XmlParser *parser){
 	int cantidadMensajes = parser->getNumberOfMessages();
 	int contador;
@@ -207,6 +240,162 @@ void ciclar(int socket, int milisegundos, XmlParser *parser){
 	cout<<"Cantidad total de mensajes enviados: "<<cantidadMensajesEnviados<<endl;
 }
 
+
+
+void initializeSDL(int socketConnection){
+	window = new Window("Prueba", 640, 480);
+	background = new Background();
+	background->loadBackground("fondo.png", window->getRenderer());
+	SDL_RenderClear(window->getRenderer());
+	background->paint(window->getRenderer(),0,0);
+	window->paint();
+	/*SDL_Event event;
+	int end = false;
+	clientMsj msg;
+	Position pos;
+	int button;
+	while (userIsConnected){
+		scrollingOffset++;
+		SDL_RenderClear(window->getRenderer());
+		background.paint(window->getRenderer(), 0, scrollingOffset);
+		background.paint(window->getRenderer(), 0, scrollingOffset - background.getWidth());
+		avion->paint(window->getRenderer(), 240, 320);
+		window->paint();
+		if(scrollingOffset > background.getWidth())
+			scrollingOffset = 0;
+		while(SDL_PollEvent( &event ) != 0){
+			button = avion->processEvent(&event);
+		}
+		strcpy(msg.id, nombre.c_str());
+		strcpy(msg.type, "movement");
+		switch(button){
+			case 1:
+				strcpy(msg.value, "1");
+				break;
+			case 2:
+				strcpy(msg.value, "2");
+				break;
+			case 3:
+				strcpy(msg.value, "3");
+				break;
+			case 4:
+				strcpy(msg.value, "4");
+				break;
+			case 5:
+				strcpy(msg.value, "5");
+				break;
+			case -1:
+				userIsConnected = false;
+				close(client->getSocketConnection());
+				client->threadSDL.detach();
+		}
+		if(button != 0){
+			sendMsj(socketConnection, sizeof(msg), &msg);
+			readMsj(socketConnection, sizeof(msg), &msg);
+		}
+	}*/
+}
+void updateObject(mensaje msj){
+	list<Object*>::iterator iterador;
+	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		if((*iterador)->getId() == msj.id ){
+			(*iterador)->setPosX(msj.posX);
+			(*iterador)->setPosY(msj.posY);
+		}
+	}
+}
+void createObject(mensaje msj){
+	Object* object = new Object();
+	object->setHeight(msj.height);
+	object->setWidth(msj.width);
+	object->setId(msj.id);
+	object->setPosX(msj.posX);
+	object->setPosY(msj.posY);
+	object->setPhotograms(msj.actualPhotogram);
+	object->setPath(msj.imagePath);
+	string path(msj.imagePath);
+	object->loadImage("avionPrueba1.png", window->getRenderer(), msj.width, msj.height);
+	objects.push_back(object);
+}
+
+void handleEvents(int socket){
+	SDL_Event event;
+	int button;
+	clientMsj msg;
+	mensaje msj;
+	while(userIsConnected){
+		while(SDL_PollEvent( &event) != 0){
+			button = avion->processEvent(&event);
+		}
+		strcpy(msg.id, nombre.c_str());
+		strcpy(msg.type, "movement");
+		switch(button){
+			case 1:
+				strcpy(msg.value, "ABJ");
+				break;
+			case 2:
+				strcpy(msg.value, "ARR");
+				break;
+			case 3:
+				strcpy(msg.value, "DER");
+				break;
+			case 4:
+				strcpy(msg.value, "IZQ");
+				break;
+			case 5:
+				strcpy(msg.value, "DIS");
+				break;
+			case -1:
+				userIsConnected = false;
+				close(client->getSocketConnection());
+		}
+		if(button != 0){
+			usleep(1000);
+			sendMsj(socket, sizeof(msg), &msg);
+			/*readObjectMessage(socket, sizeof(msj), &msj);
+			if(strcmp(msj.action, "create") == 0){
+				cout << "Creo un avion con id: " << msj.id << endl;
+				createObject(msj);
+			}else if(strcmp(msj.action, "draw") == 0){
+				updateObject(msj);
+			}*/
+		}
+	}
+
+}
+
+void draw(){
+	scrollingOffset++;
+	SDL_RenderClear(window->getRenderer());
+	background->paint(window->getRenderer(), 0, scrollingOffset*0.1 -640);
+	background->paint(window->getRenderer(), 0, scrollingOffset*0.1 - background->getHeight());
+	list<Object*>::iterator iterador;
+	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+	}
+	window->paint();
+	if(scrollingOffset*0.1 > background->getHeight())
+		scrollingOffset = 0;
+}
+
+
+
+
+void receiveFromSever(int socket){
+	mensaje msj;
+	while(userIsConnected){
+		readObjectMessage(socket, sizeof(msj), &msj);
+		if(strcmp(msj.action, "create") == 0){
+			cout << "Creo un avion con id: " << msj.id << endl;
+			createObject(msj);
+		}else if(strcmp(msj.action, "draw") == 0){
+			updateObject(msj);
+		}
+	}
+}
+
+
+
 int main(int argc, char* argv[]) {
 	const char *fileName;
 	logWriter = new LogWriter();
@@ -232,13 +421,45 @@ int main(int argc, char* argv[]) {
 
 	loadMessages(messagesList, parser);
 	int destinationSocket;
-
+	client = new Client();
 	printMenu(messagesList);
 	unsigned int userDidChooseOption;
 	bool appShouldExit = false;
-	clientMsj recibido;
+	while(!userIsConnected){
+		destinationSocket = initializeClient(serverIP, serverPort);
+		cout << "Ingrese nombre para conectarse.";
+		cin >> nombre;
+
+		clientMsj recibido;
+		clientMsj inicializacion;
+		strcpy(inicializacion.value,nombre.c_str());
+		sendMsj(destinationSocket,sizeof(inicializacion),&inicializacion);
+
+		char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
+		if (strcmp(messageType, kServerFullType) == 0) {
+			closeSocket(destinationSocket);
+			logWriter->writeCannotConnectDueToServerFull();
+		}else if(strcmp(recibido.type,"error") == 0){
+			closeSocket(destinationSocket);
+			cout<< recibido.value << endl;
+		} else {
+			userIsConnected = true;
+			initializeSDL(destinationSocket);
+			logWriter->writeUserHasConnectedSuccessfully();
+		}
+	}
+	if(userIsConnected){
+		mensaje msj;
+		readObjectMessage(destinationSocket, sizeof(msj), &msj);
+		createObject(msj);
+		client->threadSDL = std::thread(handleEvents, destinationSocket);
+		client->threadListen = std::thread(receiveFromSever, destinationSocket);
+	}
+	while(userIsConnected){
+		draw();
+	}
 	//std::thread desencolarMensajesThread;
-	while (!appShouldExit){
+	/*while (!appShouldExit){
 		cin>>userDidChooseOption;
 		logWriter->writeUserDidSelectOption(userDidChooseOption);
 
@@ -247,7 +468,6 @@ int main(int argc, char* argv[]) {
 				if (!userIsConnected) {
 					destinationSocket = initializeClient(serverIP, serverPort);
 					if (destinationSocket > 0) {
-						string nombre;
 						cout << "Ingrese nombre para conectarse.";
 						cin >> nombre;
 
@@ -264,6 +484,7 @@ int main(int argc, char* argv[]) {
 							cout<< recibido.value << endl;
 						} else {
 							userIsConnected = true;
+							client->threadSDL =  std::thread(initializeSDL,destinationSocket);
 							logWriter->writeUserHasConnectedSuccessfully();
 						}
 					}
@@ -277,6 +498,7 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeDisconnect:
 				if (userIsConnected) {
 					closeSocket(destinationSocket);
+					client->threadSDL.detach();
 					logWriter->writeUserHasDisconnectSuccessfully();
 				} else
 					cout << "Tenes que conectarte primero" << endl;
@@ -285,6 +507,8 @@ int main(int argc, char* argv[]) {
 			case MenuOptionChoosedTypeExit:
 				appShouldExit = true;
 				close(destinationSocket);
+				client->threadSDL.detach();
+				delete client;
 				//desencolarMensajesThread.detach();
 				break;
 			case MenuOptionChoosedTypeCycle:
@@ -311,7 +535,10 @@ int main(int argc, char* argv[]) {
 					cout << "Primero tenes que conectarte" << endl;
 				printMenu(messagesList);
 		}
-	}
+	}*/
+
+	client->threadSDL.detach();
+	client->threadListen.detach();
 
 	for(int i = 0; i<parser->getNumberOfMessages();i++){
 		free(messagesList.front());
@@ -320,32 +547,6 @@ int main(int argc, char* argv[]) {
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
 
-	SDL_Init(SDL_INIT_VIDEO);
-	Window window("Prueba", 640, 480);
-	Avion avion("Gustavo", 320, 240);
-	avion.loadImage("avionPrueba.png", window.getRenderer());
-	Background background;
-	background.loadBackground("fondo.png", window.getRenderer());
-	int scrollingOffset = 0;
-	SDL_SetRenderDrawColor( window.getRenderer(), 0xFF, 0xFF, 0xFF, 0xFF );
-	SDL_RenderClear(window.getRenderer());
-	background.paint(window.getRenderer(),0,0);
-	avion.paint(window.getRenderer(), 240, 320);
-	window.paint();
-	SDL_Event event;
-	bool end = false;
-	while (!end){
-		scrollingOffset++;
-		SDL_RenderClear(window.getRenderer());
-		background.paint(window.getRenderer(), 0, scrollingOffset);
-		background.paint(window.getRenderer(), 0, scrollingOffset - background.getWidth());
-		avion.paint(window.getRenderer(), 240, 320);
-		window.paint();
-		if(scrollingOffset > background.getWidth())
-			scrollingOffset = 0;
-		while(SDL_PollEvent( &event ) != 0){
-			end = avion.processEvent(&event);
-		}
-	}
+
 	return EXIT_SUCCESS;
 }

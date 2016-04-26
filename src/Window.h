@@ -2,6 +2,7 @@
 #define WINDOW_H_
 #include <SDL2/SDL.h>
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -12,12 +13,36 @@ public:
 	SDL_Renderer* getRenderer();
 	virtual ~Window();
 
-private:
+	int getHeight() const {
+		return height;
+	}
+
+	void setHeight(int height) {
+		this->height = height;
+	}
+
+	const string& getTitle() const {
+		return title;
+	}
+
+	void setTitle(const string& title) {
+		this->title = title;
+	}
+
+	int getWidth() const {
+		return width;
+	}
+
+	void setWidth(int width) {
+		this->width = width;
+	}
 	SDL_Window* window;
+	SDL_Renderer* renderer;
+private:
+
 	int height;
 	int width;
 	string title;
-	SDL_Renderer* renderer;
 };
 
 #endif /* WINDOW_H_ */
