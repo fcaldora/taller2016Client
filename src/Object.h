@@ -92,8 +92,6 @@ private:
 	int width;
 	int height;
 	SDL_Texture* texture;
-
-
 };
 
 #endif /* OBJECT_H_ */
