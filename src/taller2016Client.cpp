@@ -32,6 +32,8 @@ XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
 bool userIsConnected;
+bool deleting;
+bool painting;
 string nombre;
 Client* client;
 Window* window;
@@ -187,6 +189,20 @@ void updateObject(mensaje msj){
 	}
 }
 
+void deleteObject(mensaje msj){
+	list<Object*>::iterator iterador;
+	if(!painting){
+		deleting = true;
+		for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+			if((*iterador)->getId() == msj.id ){
+				objects.erase(iterador);
+				iterador--;
+			}
+		}
+		deleting = false;
+	}
+}
+
 void createObject(mensaje msj){
 	Object* object = new Object();
 	object->setHeight(msj.height);
@@ -238,7 +254,7 @@ void handleEvents(int socket){
 				close(client->getSocketConnection());
 		}
 		if(button != 0){
-			usleep(1000);
+			usleep(10000);
 			sendMsj(socket, sizeof(msg), &msg);
 		}
 	}
@@ -251,10 +267,15 @@ void draw(){
 	//background->paint(window->getRenderer(), 0, scrollingOffset*0.1 -640);
 	//background->paint(window->getRenderer(), 0, scrollingOffset*0.1 - background->getHeight());
 	list<Object*>::iterator iterador;
-	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+	if(!deleting){
+		painting = true;
+		for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+			(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+		}
 	}
 	window->paint();
+	painting = false;
+
 	/*if(scrollingOffset*0.1 > background->getHeight())
 		scrollingOffset = 0;*/
 }
@@ -270,6 +291,8 @@ void receiveFromSever(int socket){
 			createObject(msj);
 		else if(strcmp(msj.action, "draw") == 0)
 			updateObject(msj);
+		else if(strcmp(msj.action, "delete") == 0)
+			deleteObject(msj);
 	}
 }
 
