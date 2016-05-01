@@ -227,6 +227,12 @@ void handleEvents(int socket){
 			case 5:
 				strcpy(msg.value, "DIS");
 				break;
+			case 6:
+				strcpy(msg.value, "RES");
+				break;
+			case 7:
+				strcpy(msg.value, "ANIMATE");
+				break;
 			case -1:
 				userIsConnected = false;
 				close(client->getSocketConnection());
