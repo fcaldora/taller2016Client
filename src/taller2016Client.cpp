@@ -248,7 +248,8 @@ void handleEvents(int socket){
 				strcpy(msg.value, "RES");
 				break;
 			case 7:
-				strcpy(msg.value, "ANIMATE");
+				strcpy(msg.type, "animate");
+				strcpy(msg.value, "loop");
 				break;
 			case -1:
 				userIsConnected = false;
