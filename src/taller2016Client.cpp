@@ -242,6 +242,7 @@ void handleEvents(int socket){
 				strcpy(msg.value, "IZQ");
 				break;
 			case 5:
+				strcpy(msg.type, "shoot");
 				strcpy(msg.value, "DIS");
 				break;
 			case 6:
