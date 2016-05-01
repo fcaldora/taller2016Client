@@ -263,22 +263,19 @@ void handleEvents(int socket){
 }
 
 void draw(){
-	//scrollingOffset++;
 	SDL_RenderClear(window->getRenderer());
-	//background->paint(window->getRenderer(), 0, scrollingOffset*0.1 -640);
-	//background->paint(window->getRenderer(), 0, scrollingOffset*0.1 - background->getHeight());
-	list<Object*>::iterator iterador;
+	list<Object*>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
+	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY() - (*iterador)->getHeight());
+	iterador++;
 	if(!deleting){
 		painting = true;
-		for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		for (; iterador != objects.end(); iterador++){
 			(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
 		}
 	}
 	window->paint();
 	painting = false;
-
-	/*if(scrollingOffset*0.1 > background->getHeight())
-		scrollingOffset = 0;*/
 }
 
 
