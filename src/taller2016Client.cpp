@@ -215,6 +215,7 @@ void createObject(mensaje msj){
 	string path(msj.imagePath);
 	object->loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
+	cout << msj.id << endl;
 }
 
 void handleEvents(int socket){
@@ -222,7 +223,7 @@ void handleEvents(int socket){
 	int button;
 	clientMsj msg;
 	while(userIsConnected){
-		while(SDL_PollEvent( &event) != 0){
+		if(SDL_PollEvent( &event) == 1){
 			button = avion->processEvent(&event);
 		}
 		strcpy(msg.id, nombre.c_str());
