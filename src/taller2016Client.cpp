@@ -245,10 +245,11 @@ void handleEvents(int socket){
 				strcpy(msg.value, "DIS");
 				break;
 			case 6:
+				strcpy(msg.type, "control");
 				strcpy(msg.value, "RES");
 				break;
 			case 7:
-				strcpy(msg.type, "animate");
+				strcpy(msg.type, "animation");
 				strcpy(msg.value, "loop");
 				break;
 			case -1:
