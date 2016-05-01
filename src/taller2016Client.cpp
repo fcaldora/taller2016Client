@@ -191,15 +191,22 @@ void updateObject(mensaje msj){
 
 void deleteObject(mensaje msj){
 	list<Object*>::iterator iterador;
-	if(!painting){
-		deleting = true;
-		for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-			if((*iterador)->getId() == msj.id ){
-				objects.erase(iterador);
-				iterador--;
-			}
+	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		if((*iterador)->getId() == msj.id ){
+			objects.erase(iterador);
+			iterador--;
 		}
-		deleting = false;
+	}
+}
+
+void changePath(mensaje msj){
+	list<Object*>::iterator iterador;
+	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		if((*iterador)->getId() == msj.id ){
+			(*iterador)->setPath(msj.imagePath);
+			(*iterador)->loadImage(msj.imagePath,  window->getRenderer(), 81, 81);
+			cout << "CAMBIA LA IMAGEN" << endl;
+		}
 	}
 }
 
@@ -262,20 +269,25 @@ void handleEvents(int socket){
 
 }
 
+void keepAlive(int socketConnection){
+	clientMsj msg;
+	strcpy(msg.value, "alive");
+	while(userIsConnected){
+		usleep(1000);
+		sendMsj(socketConnection, sizeof(msg), &msg);
+	}
+}
+
 void draw(){
 	SDL_RenderClear(window->getRenderer());
 	list<Object*>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
 	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
 	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY() - (*iterador)->getHeight());
 	iterador++;
-	if(!deleting){
-		painting = true;
-		for (; iterador != objects.end(); iterador++){
-			(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
-		}
+	for (; iterador != objects.end(); iterador++){
+		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
 	}
 	window->paint();
-	painting = false;
 }
 
 
@@ -285,12 +297,15 @@ void receiveFromSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
 		readObjectMessage(socket, sizeof(msj), &msj);
-		if(strcmp(msj.action, "create") == 0)
+		if(strcmp(msj.action, "create") == 0){
 			createObject(msj);
-		else if(strcmp(msj.action, "draw") == 0)
+		}else if(strcmp(msj.action, "draw") == 0){
 			updateObject(msj);
-		else if(strcmp(msj.action, "delete") == 0)
+		}else if(strcmp(msj.action, "delete") == 0){
 			deleteObject(msj);
+		}else if(strcmp(msj.action, "path") == 0){
+			changePath(msj);
+		}
 	}
 }
 
@@ -349,6 +364,7 @@ int main(int argc, char* argv[]) {
 		logWriter->writeUserHasConnectedSuccessfully();
 		client->threadSDL = std::thread(handleEvents, destinationSocket);
 		client->threadListen = std::thread(receiveFromSever, destinationSocket);
+		client->threadKeepAlive = std::thread(keepAlive, destinationSocket);
 	}
 	while(userIsConnected){
 		draw();

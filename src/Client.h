@@ -27,6 +27,7 @@ public:
 
 	thread threadSDL;
 	thread threadListen;
+	thread threadKeepAlive;
 
 private:
 	int socketConnection;
