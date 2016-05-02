@@ -249,13 +249,16 @@ void handleEvents(int socket){
 				strcpy(msg.value, "IZQ");
 				break;
 			case 5:
+				strcpy(msg.type, "shoot");
 				strcpy(msg.value, "DIS");
 				break;
 			case 6:
+				strcpy(msg.type, "control");
 				strcpy(msg.value, "RES");
 				break;
 			case 7:
-				strcpy(msg.value, "ANIMATE");
+				strcpy(msg.type, "animation");
+				strcpy(msg.value, "loop");
 				break;
 			case -1:
 				userIsConnected = false;
