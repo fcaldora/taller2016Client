@@ -18,6 +18,7 @@ public:
 	bool loadBackground(string imagePath, SDL_Renderer* renderer);
 	bool paint(SDL_Renderer* renderer, int posY, int posX);
 	int getWidth();
+	int getHeight();
 	virtual ~Background();
 
 private:

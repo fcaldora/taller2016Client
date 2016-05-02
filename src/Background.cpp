@@ -20,8 +20,8 @@ bool Background::loadBackground(string imagePath, SDL_Renderer* renderer){
 		cout<<"Error al cargar la imagen del fondo"<<endl;//Deberiamos cargar una imagen con un "?"
 		return false;
 	}
-	this->height = surfaceAux->h;
-	this->width = surfaceAux->w;
+	this->height = 1280;
+	this->width = 480;
 	this->texture = SDL_CreateTextureFromSurface(renderer, surfaceAux);
 	if(this->texture == NULL){
 		cout<<"Error al crear la textura con la imagen del fondo"<<endl;
@@ -40,6 +40,10 @@ bool Background::paint(SDL_Renderer* renderer, int posX, int posY){
 
 int Background::getWidth(){
 	return width;
+}
+
+int Background::getHeight(){
+	return height;
 }
 
 Background::~Background() {

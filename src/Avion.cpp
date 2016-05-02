@@ -16,14 +16,14 @@ Avion::Avion(string name, int posX, int posY) {
 	this->width = 0;
 }
 
-bool Avion::loadImage(string pathImage, SDL_Renderer* renderer){
+bool Avion::loadImage(string pathImage, SDL_Renderer* renderer, int width, int heigth){
 	SDL_Surface* surfaceAux = IMG_Load(pathImage.c_str());
 	if(surfaceAux == NULL){
 		cout<<"Error al cargar la imagen del avion"<<endl;//Deberiamos cargar una imagen con un "?"
 		return false;
 	}
-	this->height = surfaceAux->h;
-	this->width = surfaceAux->w;
+	this->height = heigth;
+	this->width = width;
 	//Pongo como color key el cyan (0,255,255) para que se pinte solo el avion.
 	SDL_SetColorKey( surfaceAux, SDL_TRUE, SDL_MapRGB( surfaceAux->format, 0, 255, 255 ) );
 	this->texture = SDL_CreateTextureFromSurface(renderer, surfaceAux);
@@ -44,29 +44,39 @@ bool Avion::paint(SDL_Renderer* renderer, int posX, int posY){
 }
 
 //Aca se envian los mensajes al Server
-bool Avion::processEvent(SDL_Event* event){
+int Avion::processEvent(SDL_Event* event){
 	if(event->type == SDL_KEYDOWN){
+		int value = 0;
 		switch(event->key.keysym.sym){
-		case SDLK_DOWN:
-			cout<<"ABAJO"<<endl;
-			break;
-		case SDLK_UP:
-			cout<<"ARRIBA"<<endl;
-			break;
-		case SDLK_RIGHT:
-			cout<<"DERECHA"<<endl;
-			break;
-		case SDLK_LEFT:
-			cout<<"IZQUIERDA"<<endl;
-			break;
-		case SDLK_SPACE:
-			cout<<"DISPARAR"<<endl;
-			break;
-		}
-	}else if(event->type == SDL_QUIT){
-		return true;
+			case SDLK_DOWN:
+				value = 1;
+				break;
+			case SDLK_UP:
+				value = 2;
+				break;
+			case SDLK_RIGHT:
+				value = 3;
+				break;
+			case SDLK_LEFT:
+				value = 4;
+				break;
+			case SDLK_SPACE:
+				value = 5;
+				break;
+			case SDLK_r:
+				value = 6;
+				break;
+			case SDLK_RETURN:
+				value = 7;
+				break;
+			}
+		return value;
+
+	} else if(event->type == SDL_QUIT){
+		return -1;
 	}
-	return false;
+	return 0;
+
 }
 
 Avion::~Avion() {
