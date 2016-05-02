@@ -18,6 +18,7 @@
 #include <chrono>
 #include "Window.h"
 #include "Object.h"
+#include <mutex>
 #include "Client.h"
 #include "Avion.h"
 #include "Background.h"
@@ -28,6 +29,7 @@ using namespace std;
 
 list<Object*> objects;
 
+mutex mutexObjects;
 XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
@@ -191,12 +193,14 @@ void updateObject(mensaje msj){
 
 void deleteObject(mensaje msj){
 	list<Object*>::iterator iterador;
+	mutexObjects.lock();
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
 		if((*iterador)->getId() == msj.id ){
 			objects.erase(iterador);
 			iterador--;
 		}
 	}
+	mutexObjects.unlock();
 }
 
 void changePath(mensaje msj){
@@ -280,6 +284,7 @@ void keepAlive(int socketConnection){
 
 void draw(){
 	SDL_RenderClear(window->getRenderer());
+	mutexObjects.lock();
 	list<Object*>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
 	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
 	(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY() - (*iterador)->getHeight());
@@ -287,6 +292,7 @@ void draw(){
 	for (; iterador != objects.end(); iterador++){
 		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
 	}
+	mutexObjects.unlock();
 	window->paint();
 }
 
