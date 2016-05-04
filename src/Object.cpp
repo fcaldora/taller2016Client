@@ -20,7 +20,7 @@ bool Object::loadImage(string pathImage, SDL_Renderer* renderer, int width, int 
 	SDL_Surface* surfaceAux = IMG_Load(pathImage.c_str());
 	if(surfaceAux == NULL){
 		cout<<"Error al cargar la imagen del avion"<<endl;//Deberiamos cargar una imagen con un "?"
-		return false;
+		surfaceAux = IMG_Load(imageErrorPath);
 	}
 	this->height = height;
 	this->width = width;

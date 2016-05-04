@@ -35,6 +35,7 @@ using namespace std;
 #define kMessageTypeDouble "DOUBLE"
 #define kMessageTypeString "STRING"
 #define kMessageTypeChar "CHAR"
+#define imageErrorPath "question.png"
 
 #define kServerFullType "server_full"
 #define kConnectionSuccessfulType "connection_successful"
