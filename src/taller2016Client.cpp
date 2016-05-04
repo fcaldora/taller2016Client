@@ -174,10 +174,10 @@ int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
 
 void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj){
 	window = new Window("1942", windowMsj.height, windowMsj.width);
-	background = new Background();
-	background->loadBackground(escenarioMsj.imagePath, window->getRenderer());
+	//background = new Background();
+	//background->loadBackground(escenarioMsj.imagePath, window->getRenderer());
 	SDL_RenderClear(window->getRenderer());
-	background->paint(window->getRenderer(),0,0);
+	//background->paint(window->getRenderer(),0,0);
 	window->paint();
 }
 
