@@ -19,12 +19,12 @@ Object::~Object() {
 bool Object::loadImage(string pathImage, SDL_Renderer* renderer, int width, int height){
 	SDL_Surface* surfaceAux = IMG_Load(pathImage.c_str());
 	if(surfaceAux == NULL){
-		cout<<"Error al cargar la imagen del avion"<<endl;//Deberiamos cargar una imagen con un "?"
+		cout<<"Error al cargar la imagen del avion"<<endl;
 		surfaceAux = IMG_Load(imageErrorPath);
 	}
 	this->height = height;
 	this->width = width;
-	//Pongo como color key el cyan (0,255,255) para que se pinte solo el avion.
+	//color key = (0,255,255)
 	SDL_SetColorKey( surfaceAux, SDL_TRUE, SDL_MapRGB( surfaceAux->format, 0, 255, 255 ) );
 	this->texture = SDL_CreateTextureFromSurface(renderer, surfaceAux);
 	if(this->texture == NULL){
@@ -37,7 +37,9 @@ bool Object::loadImage(string pathImage, SDL_Renderer* renderer, int width, int 
 
 bool Object::paint(SDL_Renderer* renderer, int posX, int posY){
 	SDL_Rect imageRect{posX,posY,this->width, this->height};
-	if(SDL_RenderCopy(renderer,this->texture, NULL, &imageRect) < 0){
+	int imageX = width * (this->actualPhotogram - 1);
+	SDL_Rect photogramRect{imageX, 0, width, height};
+	if(SDL_RenderCopy(renderer,this->texture, &photogramRect, &imageRect) < 0){
 		return false;
 	}
 	return true;

@@ -184,6 +184,7 @@ void updateObject(mensaje msj){
 		if((*iterador)->getId() == msj.id ){
 			(*iterador)->setPosX(msj.posX);
 			(*iterador)->setPosY(msj.posY);
+			(*iterador)->setActualPhotogram(msj.actualPhotogram);
 		}
 	}
 }
@@ -218,12 +219,12 @@ void createObject(mensaje msj){
 	object->setId(msj.id);
 	object->setPosX(msj.posX);
 	object->setPosY(msj.posY);
-	object->setPhotograms(msj.actualPhotogram);
+	object->setActualPhotogram(msj.actualPhotogram);
+	object->setPhotograms(msj.photograms);
 	object->setPath(msj.imagePath);
 	string path(msj.imagePath);
 	object->loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
-	cout << msj.id << endl;
 }
 
 void handleEvents(int socket){

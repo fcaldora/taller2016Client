@@ -79,6 +79,10 @@ public:
 		this->width = width;
 	}
 
+	void setActualPhotogram(int photogram){
+		this->actualPhotogram = photogram;
+	}
+
 	bool paint(SDL_Renderer* renderer, int posX, int posY);
 
 	bool loadImage(string pathImage, SDL_Renderer* renderer, int width, int heigth);
