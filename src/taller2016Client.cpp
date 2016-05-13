@@ -39,7 +39,6 @@ bool painting;
 string nombre;
 Client* client;
 Window* window;
-Background* background;
 Avion* avion;
 
 enum MenuOptionChoosedType {
@@ -173,7 +172,7 @@ int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
 }
 
 void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj){
-	window = new Window("1942", windowMsj.height, windowMsj.width);;
+	window = new Window("1942", windowMsj.height, windowMsj.width);
 	SDL_RenderClear(window->getRenderer());
 	window->paint();
 }
@@ -191,14 +190,13 @@ void updateObject(mensaje msj){
 
 void deleteObject(mensaje msj){
 	list<Object*>::iterator iterador;
-	mutexObjects.lock();
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
 		if((*iterador)->getId() == msj.id ){
+			(*iterador)->destroyTexture();
 			objects.erase(iterador);
 			iterador--;
 		}
 	}
-	mutexObjects.unlock();
 }
 
 void changePath(mensaje msj){
@@ -259,11 +257,23 @@ void handleEvents(int socket){
 			case 7:
 				strcpy(msg.value, "ANIMATE");
 				break;
+			case 8:
+				userIsConnected = false;
+				//falta destruir las texturas de cada uno de los objetos con sdl_destroytexture();
+				objects.clear();
+				SDL_RenderClear(window->getRenderer());
+				SDL_DestroyRenderer(window->getRenderer());
+				window->renderer = NULL;
+				SDL_DestroyWindow(window->window);
+				window->window = NULL;
+				close(client->getSocketConnection());
+				SDL_Quit();
+				break;
 			case -1:
 				userIsConnected = false;
 				close(client->getSocketConnection());
 		}
-		if(button != 0){
+		if(button != 0 && button != 8){
 			usleep(10000);
 			sendMsj(socket, sizeof(msg), &msg);
 		}
@@ -301,6 +311,7 @@ void receiveFromSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
 		readObjectMessage(socket, sizeof(msj), &msj);
+		mutexObjects.lock();
 		if(strcmp(msj.action, "create") == 0){
 			createObject(msj);
 		}else if(strcmp(msj.action, "draw") == 0){
@@ -310,6 +321,7 @@ void receiveFromSever(int socket){
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
 		}
+		mutexObjects.unlock();
 	}
 }
 
@@ -373,12 +385,11 @@ int main(int argc, char* argv[]) {
 	while(userIsConnected){
 		draw();
 	}
-	client->threadSDL.detach();
-	client->threadListen.detach();
-
+	client->threadSDL.join();
+	client->threadListen.join();
+	client->threadKeepAlive.join();
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
-
 
 	return EXIT_SUCCESS;
 }

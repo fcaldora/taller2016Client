@@ -69,6 +69,9 @@ int Avion::processEvent(SDL_Event* event){
 			case SDLK_a:
 				value = 7;
 				break;
+			case SDL_QUIT:
+				value = 8;
+				break;
 			}
 		return value;
 

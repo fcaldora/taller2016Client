@@ -19,7 +19,7 @@ Object::~Object() {
 bool Object::loadImage(string pathImage, SDL_Renderer* renderer, int width, int height){
 	SDL_Surface* surfaceAux = IMG_Load(pathImage.c_str());
 	if(surfaceAux == NULL){
-		cout<<"Error al cargar la imagen del avion"<<endl;
+		cout<<"Error al cargar la imagen del objeto"<<endl;
 		surfaceAux = IMG_Load(imageErrorPath);
 	}
 	this->height = height;
@@ -39,8 +39,15 @@ bool Object::paint(SDL_Renderer* renderer, int posX, int posY){
 	SDL_Rect imageRect{posX,posY,this->width, this->height};
 	int imageX = width * (this->actualPhotogram - 1);
 	SDL_Rect photogramRect{imageX, 0, width, height};
-	if(SDL_RenderCopy(renderer,this->texture, &photogramRect, &imageRect) < 0){
-		return false;
+	if(this->texture != NULL){
+		if(SDL_RenderCopy(renderer,this->texture, &photogramRect, &imageRect) < 0){
+			return false;
+		}
 	}
 	return true;
+}
+
+void Object::destroyTexture(){
+	SDL_DestroyTexture(this->texture);
+	this->texture = NULL;
 }

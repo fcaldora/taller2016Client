@@ -29,5 +29,7 @@ SDL_Renderer* Window::getRenderer(){
 
 Window::~Window() {
 	SDL_DestroyWindow(window);
+	SDL_RenderClear(this->renderer);
+	SDL_DestroyRenderer(this->renderer);
 }
 

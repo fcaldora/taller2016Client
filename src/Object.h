@@ -83,6 +83,8 @@ public:
 		this->actualPhotogram = photogram;
 	}
 
+	void destroyTexture();
+
 	bool paint(SDL_Renderer* renderer, int posX, int posY);
 
 	bool loadImage(string pathImage, SDL_Renderer* renderer, int width, int heigth);
