@@ -10,5 +10,5 @@ all:
 	g++ -Wall Client.cpp -c -std=c++11 -pthread
 	g++ -Wall Object.cpp -c -std=c++11
 
-	g++ -Wall taller2016Client.cpp XMLLoader.o LogWriter.o XmlParser.o Window.o Avion.o Background.o Client.o Object.o $(XmlLibrary) -o client -lSDL2  -pthread -lSDL2_image -Wl,-rpath=/usr/local/lib -std=c++11
+	g++ -Wall -g taller2016Client.cpp XMLLoader.o LogWriter.o XmlParser.o Window.o Avion.o Background.o Client.o Object.o $(XmlLibrary) -o client -lSDL2  -pthread -lSDL2_image -Wl,-rpath=/usr/local/lib -std=c++11
 																	

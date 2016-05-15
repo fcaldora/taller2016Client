@@ -27,6 +27,16 @@ SDL_Renderer* Window::getRenderer(){
 	return this->renderer;
 }
 
+void Window::paintAll(list<Object> objects){
+	list<Object>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
+	(*iterador).paint(renderer, (*iterador).getPosX(), (*iterador).getPosY());
+	(*iterador).paint(renderer, (*iterador).getPosX(), (*iterador).getPosY() - (*iterador).getHeight());
+	iterador++;
+	for (; iterador != objects.end(); iterador++){
+		(*iterador).paint(renderer, (*iterador).getPosX(), (*iterador).getPosY());
+	}
+}
+
 Window::~Window() {
 	SDL_DestroyWindow(window);
 	SDL_RenderClear(this->renderer);

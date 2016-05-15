@@ -8,8 +8,7 @@
 #include "Client.h"
 
 Client::Client() {
-	// TODO Auto-generated constructor stub
-
+	this->socketConnection = 0;
 }
 
 Client::~Client() {

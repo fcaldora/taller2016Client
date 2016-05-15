@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <string>
 #include <iostream>
+#include "Object.h"
 
 using namespace std;
 
@@ -36,6 +37,8 @@ public:
 	void setWidth(int width) {
 		this->width = width;
 	}
+
+	void paintAll(list<Object> objects);
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 private:
