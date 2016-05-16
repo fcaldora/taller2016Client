@@ -199,7 +199,7 @@ void changePath(mensaje msj){
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
 		if((*iterador).getId() == msj.id ){
 			(*iterador).setPath(msj.imagePath);
-			(*iterador).loadImage(msj.imagePath,  window->getRenderer(), 81, 81);
+			(*iterador).loadImage(msj.imagePath,  window->getRenderer(), msj.width, msj.height);
 			cout << "CAMBIA LA IMAGEN" << endl;
 		}
 	}
