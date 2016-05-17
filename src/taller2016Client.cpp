@@ -27,7 +27,7 @@
 
 using namespace std;
 
-list<Object> objects;
+list<Object*> objects;
 
 mutex mutexObjects;
 XMLLoader *xmlLoader;
@@ -36,6 +36,7 @@ LogWriter *logWriter;
 bool userIsConnected;
 bool deleting;
 bool painting;
+bool gameHasBeenReseted;
 string nombre;
 Client* client;
 Window* window;
@@ -73,6 +74,7 @@ int initializeClient(string destinationIp, int port) {
 	if ((hPtr = gethostbyname(remoteHost)) == NULL) {
 		cerr << "System DNS name resolution not configured properly." << endl;
 		logWriter->writeConnectionErrorDescription("Error en la IP. System DNS name resolution not configured properly.");
+		//*archivoErrores<<"Error. Ip "<<destinationIp<<" invalida."<<endl;
 		prepareForExit(xmlLoader, parser, logWriter);
 		exit(EXIT_FAILURE);
 	}
@@ -167,59 +169,59 @@ int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
 
 void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj){
 	window = new Window("1942", windowMsj.height, windowMsj.width);
+	SDL_RenderClear(window->getRenderer());
 	window->paint();
 }
 
 void updateObject(mensaje msj){
-	list<Object>::iterator iterador;
+	list<Object*>::iterator iterador;
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		if((*iterador).getId() == msj.id ){
-			(*iterador).setPosX(msj.posX);
-			(*iterador).setPosY(msj.posY);
-			(*iterador).setActualPhotogram(msj.actualPhotogram);
+		if((*iterador)->getId() == msj.id ){
+			(*iterador)->setPosX(msj.posX);
+			(*iterador)->setPosY(msj.posY);
+			(*iterador)->setActualPhotogram(msj.actualPhotogram);
 		}
 	}
 }
 
 void deleteObject(mensaje msj){
-	list<Object>::iterator iterador = objects.begin();
-	bool borrado = false;
-	while (!borrado && iterador != objects.end()){
-		if((*iterador).getId() == msj.id ){
-			(*iterador).destroyTexture();
+	list<Object*>::iterator iterador;
+	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
+		if((*iterador)->getId() == msj.id ){
+			(*iterador)->destroyTexture();
 			objects.erase(iterador);
-			borrado = true;
-		}else
-			iterador++;
+			iterador--;
+		}
 	}
 }
 
 void changePath(mensaje msj){
-	list<Object>::iterator iterador;
+	list<Object*>::iterator iterador;
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		if((*iterador).getId() == msj.id ){
-			(*iterador).setPath(msj.imagePath);
-			(*iterador).loadImage(msj.imagePath,  window->getRenderer(), msj.width, msj.height);
+		if((*iterador)->getId() == msj.id ){
+			(*iterador)->setPath(msj.imagePath);
+			(*iterador)->loadImage(msj.imagePath,  window->getRenderer(), 81, 81);
 			cout << "CAMBIA LA IMAGEN" << endl;
 		}
 	}
 }
 
 void createObject(mensaje msj){
-	Object object;
-	object.setHeight(msj.height);
-	object.setWidth(msj.width);
-	object.setId(msj.id);
-	object.setPosX(msj.posX);
-	object.setPosY(msj.posY);
-	object.setActualPhotogram(msj.actualPhotogram);
-	object.setPhotograms(msj.photograms);
-	object.setPath(msj.imagePath);
-	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
+	Object* object = new Object();
+	object->setHeight(msj.height);
+	object->setWidth(msj.width);
+	object->setId(msj.id);
+	object->setPosX(msj.posX);
+	object->setPosY(msj.posY);
+	object->setActualPhotogram(msj.actualPhotogram);
+	object->setPhotograms(msj.photograms);
+	object->setPath(msj.imagePath);
+	string path(msj.imagePath);
+	object->loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
 }
 
-void handleEvents(int socket){
+void* handleEvents(int socket){
 	SDL_Event event;
 	int button;
 	clientMsj msg;
@@ -229,69 +231,95 @@ void handleEvents(int socket){
 		}
 		strcpy(msg.id, nombre.c_str());
 		switch(button){
-			case 1:
-				strcpy(msg.type, "movement");
-				strcpy(msg.value, "ABJ");
-				break;
-			case 2:
-				strcpy(msg.type, "movement");
-				strcpy(msg.value, "ARR");
-				break;
-			case 3:
-				strcpy(msg.type, "movement");
-				strcpy(msg.value, "DER");
-				break;
-			case 4:
-				strcpy(msg.type, "movement");
-				strcpy(msg.value, "IZQ");
-				break;
-			case 5:
-				strcpy(msg.type, "shoot");
-				strcpy(msg.value, "DIS");
-				break;
-			case 6:
-				strcpy(msg.type, "reset");
-				strcpy(msg.value, "RES");
-				break;
-			case 7:
-				strcpy(msg.type, "animation");
-				strcpy(msg.value, "ANIMATE");
-				break;
-			case 8:
-				userIsConnected = false;
-				break;
+		case 1:
+			strcpy(msg.type, "movement");
+			strcpy(msg.value, "ABJ");
+			break;
+		case 2:
+			strcpy(msg.type, "movement");
+			strcpy(msg.value, "ARR");
+			break;
+		case 3:
+			strcpy(msg.type, "movement");
+			strcpy(msg.value, "DER");
+			break;
+		case 4:
+			strcpy(msg.type, "movement");
+			strcpy(msg.value, "IZQ");
+			break;
+		case 5:
+			strcpy(msg.type, "shoot");
+			break;
+		case 6:
+			strcpy(msg.type, "reset");
+			break;
+		case 7:
+			strcpy(msg.type, "animation");
+			break;
+		case 8:
+			userIsConnected = false;
+			//falta destruir las texturas de cada uno de los objetos con sdl_destroytexture();
+			objects.clear();
+			SDL_RenderClear(window->getRenderer());
+			SDL_DestroyRenderer(window->getRenderer());
+			window->renderer = NULL;
+			SDL_DestroyWindow(window->window);
+			window->window = NULL;
+			close(client->getSocketConnection());
+			SDL_Quit();
+			break;
+		case -1:
+			userIsConnected = false;
+			close(client->getSocketConnection());
 		}
 		if(button != 0 && button != 8){
-			usleep(10000);
-			sendMsj(socket, sizeof(msg), &msg);
+			if (!gameHasBeenReseted || button == 6) {
+				usleep(10000);
+				sendMsj(socket, sizeof(msg), &msg);
+			}
 		}
 	}
-
+	pthread_exit(NULL);
 }
 
-void keepAlive(int socketConnection){
+void* keepAlive(int socketConnection){
 	clientMsj msg;
-	memset(&msg, 0, sizeof(clientMsj));
 	strcpy(msg.type, "alive");
 	while(userIsConnected){
 		usleep(1000);
 		sendMsj(socketConnection, sizeof(msg), &msg);
 	}
+	pthread_exit(NULL);
 }
 
 void draw(){
-	mutexObjects.lock();
-	window->paintAll(objects);
-	mutexObjects.unlock();
-	window->paint();
+	if (objects.size() > 0) {
+		SDL_RenderClear(window->getRenderer());
+		mutexObjects.lock();
+
+		list<Object*>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
+		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY() - (*iterador)->getHeight());
+		iterador++;
+		for (; iterador != objects.end(); iterador++){
+			(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
+		}
+
+		mutexObjects.unlock();
+		window->paint();
+	}
 }
 
-void receiveFromSever(int socket){
+void* receiveFromSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
 		readObjectMessage(socket, sizeof(msj), &msj);
 		mutexObjects.lock();
 		if(strcmp(msj.action, "create") == 0){
+			if (gameHasBeenReseted) {
+				cout << msj.imagePath << endl;
+			}
+			gameHasBeenReseted = false;
 			createObject(msj);
 		}else if(strcmp(msj.action, "draw") == 0){
 			updateObject(msj);
@@ -299,12 +327,15 @@ void receiveFromSever(int socket){
 			deleteObject(msj);
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
+		} else if (strcmp(msj.action, "reset_game") == 0) {
+			gameHasBeenReseted = !gameHasBeenReseted;
+			objects.clear();
 		}
 		mutexObjects.unlock();
 	}
+	pthread_exit(NULL);
 }
 
-// Only for Chano
 void syncronizingWithSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
@@ -320,9 +351,9 @@ void syncronizingWithSever(int socket){
 		}
 	}
 }
-// END Only for Chano
 
 int main(int argc, char* argv[]) {
+	gameHasBeenReseted = false;
 	const char *fileName;
 	logWriter = new LogWriter();
 	xmlLoader = new XMLLoader(logWriter);
@@ -353,8 +384,6 @@ int main(int argc, char* argv[]) {
 
 		clientMsj recibido;
 		clientMsj inicializacion;
-		memset(&recibido, 0, sizeof(clientMsj));
-		memset(&inicializacion, 0, sizeof(clientMsj));
 		strcpy(inicializacion.value,nombre.c_str());
 		sendMsj(destinationSocket,sizeof(inicializacion),&inicializacion);
 
@@ -376,30 +405,20 @@ int main(int argc, char* argv[]) {
 		initializeSDL(destinationSocket, windowMsj, escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
+
+
 		client->threadSDL = std::thread(handleEvents, destinationSocket);
 		client->threadListen = std::thread(receiveFromSever, destinationSocket);
 		client->threadKeepAlive = std::thread(keepAlive, destinationSocket);
 	}
+
 	while(userIsConnected){
 		draw();
 	}
+
 	client->threadSDL.join();
 	client->threadListen.join();
 	client->threadKeepAlive.join();
-
-	list<Object>::iterator it;
-	for(it = objects.begin(); it != objects.end(); it++){
-		(*it).destroyTexture();
-	}
-	objects.clear();
-	SDL_DestroyRenderer(window->getRenderer());
-	window->renderer = NULL;
-	SDL_DestroyWindow(window->window);
-	window->window = NULL;
-	IMG_Quit();
-	SDL_Quit();
-	close(client->getSocketConnection());
-
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
 
