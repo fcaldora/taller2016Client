@@ -261,15 +261,6 @@ void* handleEvents(int socket){
 			break;
 		case 8:
 			userIsConnected = false;
-			//falta destruir las texturas de cada uno de los objetos con sdl_destroytexture();
-			objects.clear();
-			SDL_RenderClear(window->getRenderer());
-			SDL_DestroyRenderer(window->getRenderer());
-			window->renderer = NULL;
-			SDL_DestroyWindow(window->window);
-			window->window = NULL;
-			close(client->getSocketConnection());
-			SDL_Quit();
 			break;
 		case -1:
 			userIsConnected = false;
