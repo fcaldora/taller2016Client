@@ -34,8 +34,6 @@ XMLLoader *xmlLoader;
 XmlParser *parser;
 LogWriter *logWriter;
 bool userIsConnected;
-bool deleting;
-bool painting;
 string nombre;
 Client* client;
 Window* window;
@@ -205,18 +203,28 @@ void changePath(mensaje msj){
 	}
 }
 
+void coutObjects(){
+	list<Object>::iterator it = objects.begin();
+	for(; it != objects.end(); it++){
+		cout<<"Listo objeto: "<<(*it).getPath()<<endl;
+	}
+}
+
 void createObject(mensaje msj){
 	Object object;
 	object.setHeight(msj.height);
 	object.setWidth(msj.width);
 	object.setId(msj.id);
+	cout<<"Id del objeto creado: "<<msj.id<<endl;
 	object.setPosX(msj.posX);
 	object.setPosY(msj.posY);
 	object.setActualPhotogram(msj.actualPhotogram);
 	object.setPhotograms(msj.photograms);
 	object.setPath(msj.imagePath);
+	cout<<"Path del objeto creado: "<<msj.imagePath<<endl;
 	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
+	coutObjects();
 }
 
 void handleEvents(int socket){
@@ -260,6 +268,9 @@ void handleEvents(int socket){
 			case 8:
 				userIsConnected = false;
 				break;
+			case 9:
+				strcpy(msg.type, "close");
+				strcpy(msg.value, "CLOSE");
 		}
 		if(button != 0 && button != 8){
 			usleep(10000);
@@ -281,9 +292,19 @@ void keepAlive(int socketConnection){
 
 void draw(){
 	mutexObjects.lock();
+	//SDL_RenderClear(window->getRenderer());
 	window->paintAll(objects);
 	mutexObjects.unlock();
 	window->paint();
+}
+
+void resetAll(){
+	list<Object>::iterator it = objects.begin();
+	for(; it != objects.end(); it++){
+		(*it).destroyTexture();
+		//objects.erase(it);
+	}
+	objects.clear();
 }
 
 void receiveFromSever(int socket){
@@ -299,6 +320,17 @@ void receiveFromSever(int socket){
 			deleteObject(msj);
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
+		}else if (strcmp(msj.action, "close")==0){
+			userIsConnected = false;
+		}else if (strcmp(msj.action, "reset") == 0){
+			resetAll();
+		}else if (strcmp(msj.action, "windowSize") == 0){
+			cout<<"Recibio window size"<<endl;
+			SDL_SetWindowSize(window->window, msj.width, msj.height);
+			window->setHeight(msj.height);
+			window->setWidth(msj.width);
+			window->paint();
+			cout<<"Seteo todo"<<endl;
 		}
 		mutexObjects.unlock();
 	}
