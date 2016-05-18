@@ -203,28 +203,18 @@ void changePath(mensaje msj){
 	}
 }
 
-void coutObjects(){
-	list<Object>::iterator it = objects.begin();
-	for(; it != objects.end(); it++){
-		cout<<"Listo objeto: "<<(*it).getPath()<<endl;
-	}
-}
-
 void createObject(mensaje msj){
 	Object object;
 	object.setHeight(msj.height);
 	object.setWidth(msj.width);
 	object.setId(msj.id);
-	cout<<"Id del objeto creado: "<<msj.id<<endl;
 	object.setPosX(msj.posX);
 	object.setPosY(msj.posY);
 	object.setActualPhotogram(msj.actualPhotogram);
 	object.setPhotograms(msj.photograms);
 	object.setPath(msj.imagePath);
-	cout<<"Path del objeto creado: "<<msj.imagePath<<endl;
 	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
-	coutObjects();
 }
 
 void handleEvents(int socket){
