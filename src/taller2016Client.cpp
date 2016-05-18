@@ -27,7 +27,9 @@
 
 using namespace std;
 
-list<Object*> objects;
+list<Object> objects;
+
+
 
 mutex mutexObjects;
 XMLLoader *xmlLoader;
@@ -174,50 +176,51 @@ void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj
 }
 
 void updateObject(mensaje msj){
-	list<Object*>::iterator iterador;
+	list<Object>::iterator iterador;
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		if((*iterador)->getId() == msj.id ){
-			(*iterador)->setPosX(msj.posX);
-			(*iterador)->setPosY(msj.posY);
-			(*iterador)->setActualPhotogram(msj.actualPhotogram);
+		if((*iterador).getId() == msj.id ){
+			(*iterador).setPosX(msj.posX);
+			(*iterador).setPosY(msj.posY);
+			(*iterador).setActualPhotogram(msj.actualPhotogram);
 		}
 	}
 }
 
 void deleteObject(mensaje msj){
-	list<Object*>::iterator iterador;
-	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		if((*iterador)->getId() == msj.id ){
-			(*iterador)->destroyTexture();
+	list<Object>::iterator iterador = objects.begin();
+	bool borrado = false;
+	while (!borrado && iterador != objects.end()){
+		if((*iterador).getId() == msj.id ){
+			(*iterador).destroyTexture();
 			objects.erase(iterador);
-			iterador--;
-		}
+			borrado = true;
+		}else
+			iterador++;
 	}
 }
 
 void changePath(mensaje msj){
-	list<Object*>::iterator iterador;
+	list<Object>::iterator iterador;
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
-		if((*iterador)->getId() == msj.id ){
-			(*iterador)->setPath(msj.imagePath);
-			(*iterador)->loadImage(msj.imagePath,  window->getRenderer(), 81, 81);
+		if((*iterador).getId() == msj.id ){
+			(*iterador).setPath(msj.imagePath);
+			(*iterador).loadImage(msj.imagePath,  window->getRenderer(), msj.width, msj.height);
 			cout << "CAMBIA LA IMAGEN" << endl;
 		}
 	}
 }
 
 void createObject(mensaje msj){
-	Object* object = new Object();
-	object->setHeight(msj.height);
-	object->setWidth(msj.width);
-	object->setId(msj.id);
-	object->setPosX(msj.posX);
-	object->setPosY(msj.posY);
-	object->setActualPhotogram(msj.actualPhotogram);
-	object->setPhotograms(msj.photograms);
-	object->setPath(msj.imagePath);
-	string path(msj.imagePath);
-	object->loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
+	Object object;
+	object.setHeight(msj.height);
+	object.setWidth(msj.width);
+	object.setId(msj.id);
+	object.setPosX(msj.posX);
+	object.setPosY(msj.posY);
+	object.setActualPhotogram(msj.actualPhotogram);
+	object.setPhotograms(msj.photograms);
+	object.setPath(msj.imagePath);
+	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
 }
 
@@ -294,17 +297,8 @@ void* keepAlive(int socketConnection){
 
 void draw(){
 	if (objects.size() > 0) {
-		SDL_RenderClear(window->getRenderer());
 		mutexObjects.lock();
-
-		list<Object*>::iterator iterador = objects.begin(); //El primer elemento es el escenario.
-		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
-		(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY() - (*iterador)->getHeight());
-		iterador++;
-		for (; iterador != objects.end(); iterador++){
-			(*iterador)->paint(window->getRenderer(), (*iterador)->getPosX(), (*iterador)->getPosY());
-		}
-
+		window->paintAll(objects);
 		mutexObjects.unlock();
 		window->paint();
 	}
@@ -419,6 +413,20 @@ int main(int argc, char* argv[]) {
 	client->threadSDL.join();
 	client->threadListen.join();
 	client->threadKeepAlive.join();
+
+	list<Object>::iterator it;
+	for(it = objects.begin(); it != objects.end(); it++){
+		(*it).destroyTexture();
+	}
+	objects.clear();
+	SDL_DestroyRenderer(window->getRenderer());
+	window->renderer = NULL;
+	SDL_DestroyWindow(window->window);
+	window->window = NULL;
+	IMG_Quit();
+	SDL_Quit();
+	close(client->getSocketConnection());
+
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
 
