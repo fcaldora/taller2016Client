@@ -283,7 +283,9 @@ void keepAlive(int socketConnection){
 void draw(){
 	mutexObjects.lock();
 	//SDL_RenderClear(window->getRenderer());
-	window->paintAll(objects);
+	if(objects.size()>0){
+		window->paintAll(objects);
+	}
 	mutexObjects.unlock();
 	window->paint();
 }
