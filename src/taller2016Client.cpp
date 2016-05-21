@@ -22,13 +22,14 @@
 #include "Client.h"
 #include "Avion.h"
 #include "Background.h"
+#include "Messenger.h"
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
 
 using namespace std;
 
 list<Object> objects;
-
+int cantidadBytesRecibidos = 0;
 mutex mutexObjects;
 XMLLoader *xmlLoader;
 XmlParser *parser;
@@ -101,74 +102,12 @@ int initializeClient(string destinationIp, int port) {
 	return socketHandle;
 }
 
-int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
-	int enviados = 0;
-	int res = 0;
-	while(enviados<bytesAEnviar){
-		res = send(socket, &(mensaje)[enviados], bytesAEnviar - enviados, MSG_WAITALL);
-		if (res == 0){
-			logWriter->writeErrorConnectionHasClosed();
-			userIsConnected = false;
-			return 0;
-		}else if(res<0){
-			logWriter->writeErrorInSendingMessage(mensaje);
-			return -1;
-		}else if (res > 0){
-			enviados += res;
-		}
-	}
-	return enviados;
-}
-
-char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
-	int totalBytesRecibidos = 0;
-	int recibidos = 0;
-	while (totalBytesRecibidos < bytesARecibir){
-		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
-		if (recibidos < 0){
-			logWriter->writeErrorInReceivingMessageWithID(msj->id);
-			userIsConnected = false;
-			return "";
-		}else if(recibidos == 0){
-				close(socket);
-				userIsConnected = false;
-				logWriter->writeErrorConnectionHasClosed();
-				return "";
-		}else{
-			totalBytesRecibidos += recibidos;
-		}
-	}
-
-	logWriter->writeReceivedSuccessfullyMessage(msj);
-	return msj->type;
-}
-
-int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
-	int totalBytesRecibidos = 0;
-	int recibidos = 0;
-	while (totalBytesRecibidos < bytesARecibir){
-		recibidos = recv(socket, &msj[totalBytesRecibidos], bytesARecibir - totalBytesRecibidos, MSG_WAITALL);
-		if (recibidos < 0){
-			userIsConnected = false;
-			return recibidos;
-		}else if(recibidos == 0){
-				close(socket);
-				userIsConnected = false;
-				logWriter->writeErrorConnectionHasClosed();
-				return recibidos;
-		}else{
-			totalBytesRecibidos += recibidos;
-		}
-	}
-	return recibidos;
-}
-
 void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj){
 	window = new Window("1942", windowMsj.height, windowMsj.width);
 	window->paint();
 }
 
-void updateObject(mensaje msj){
+void updateObject(updateMsj msj){
 	list<Object>::iterator iterador;
 	for (iterador = objects.begin(); iterador != objects.end(); iterador++){
 		if((*iterador).getId() == msj.id ){
@@ -179,7 +118,7 @@ void updateObject(mensaje msj){
 	}
 }
 
-void deleteObject(mensaje msj){
+void deleteObject(deleteMsj msj){
 	list<Object>::iterator iterador = objects.begin();
 	bool borrado = false;
 	while (!borrado && iterador != objects.end()){
@@ -264,7 +203,7 @@ void handleEvents(int socket){
 		}
 		if(button != 0 && button != 8){
 			usleep(10000);
-			sendMsj(socket, sizeof(msg), &msg);
+			Messenger().sendClientMsj(socket, sizeof(msg), &msg);
 		}
 	}
 
@@ -276,13 +215,12 @@ void keepAlive(int socketConnection){
 	strcpy(msg.type, "alive");
 	while(userIsConnected){
 		usleep(1000);
-		sendMsj(socketConnection, sizeof(msg), &msg);
+		Messenger().sendClientMsj(socketConnection, sizeof(msg), &msg);
 	}
 }
 
 void draw(){
 	mutexObjects.lock();
-	//SDL_RenderClear(window->getRenderer());
 	if(objects.size()>0){
 		window->paintAll(objects);
 	}
@@ -294,35 +232,46 @@ void resetAll(){
 	list<Object>::iterator it = objects.begin();
 	for(; it != objects.end(); it++){
 		(*it).destroyTexture();
-		//objects.erase(it);
 	}
 	objects.clear();
 }
 
 void receiveFromSever(int socket){
 	mensaje msj;
+	int res = 0;
+	updateMsj updateMsj;
+	deleteMsj deleteMsj;
+	actionMsj action;
 	while(userIsConnected){
-		readObjectMessage(socket, sizeof(msj), &msj);
+		res = Messenger().readActionMsj(socket, sizeof(actionMsj), &action);
+		cantidadBytesRecibidos += res;
 		mutexObjects.lock();
-		if(strcmp(msj.action, "create") == 0){
+		if(strcmp(action.action, "create") == 0){
+			res = Messenger().readMensaje(socket, sizeof(mensaje), &msj);
+			cantidadBytesRecibidos += res;
 			createObject(msj);
-		}else if(strcmp(msj.action, "draw") == 0){
-			updateObject(msj);
-		}else if(strcmp(msj.action, "delete") == 0){
-			deleteObject(msj);
-		}else if(strcmp(msj.action, "path") == 0){
+		}else if(strcmp(action.action, "draw") == 0){
+			res = Messenger().readUpdateMsj(socket, sizeof(updateMsj), &updateMsj);
+			cantidadBytesRecibidos += res;
+			updateObject(updateMsj);
+		}else if(strcmp(action.action, "delete") == 0){
+			res = Messenger().readDeleteMsj(socket, sizeof(deleteMsj), &deleteMsj);
+			cantidadBytesRecibidos += res;
+			deleteObject(deleteMsj);
+		}else if(strcmp(action.action, "path") == 0){
+			res = Messenger().readMensaje(socket, sizeof(mensaje), &msj);
+			cantidadBytesRecibidos += res;
 			changePath(msj);
-		}else if (strcmp(msj.action, "close")==0){
+		}else if (strcmp(action.action, "close")==0){
 			userIsConnected = false;
-		}else if (strcmp(msj.action, "reset") == 0){
+		}else if (strcmp(action.action, "reset") == 0){
 			resetAll();
-		}else if (strcmp(msj.action, "windowSize") == 0){
-			cout<<"Recibio window size"<<endl;
+		}else if (strcmp(action.action, "windowSize") == 0){
+			Messenger().readMensaje(socket, sizeof(mensaje), &msj);
 			SDL_SetWindowSize(window->window, msj.width, msj.height);
 			window->setHeight(msj.height);
 			window->setWidth(msj.width);
 			window->paint();
-			cout<<"Seteo todo"<<endl;
 		}
 		mutexObjects.unlock();
 	}
@@ -332,7 +281,7 @@ void receiveFromSever(int socket){
 void syncronizingWithSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
-		readObjectMessage(socket, sizeof(msj), &msj);
+		Messenger().readMensaje(socket, sizeof(msj), &msj);
 		if(strcmp(msj.action, "create") == 0){
 			createObject(msj);
 		}else if(strcmp(msj.action, "draw") == 0){
@@ -380,9 +329,20 @@ int main(int argc, char* argv[]) {
 		memset(&recibido, 0, sizeof(clientMsj));
 		memset(&inicializacion, 0, sizeof(clientMsj));
 		strcpy(inicializacion.value,nombre.c_str());
-		sendMsj(destinationSocket,sizeof(inicializacion),&inicializacion);
+		Messenger().sendClientMsj(destinationSocket,sizeof(inicializacion),&inicializacion);
 
-		char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
+		int res = Messenger().readClientMsj(destinationSocket, sizeof(recibido), &recibido);
+		char* messageType = recibido.type;
+		if(res<0){
+			logWriter->writeErrorInReceivingMessageWithID(recibido.id);
+			userIsConnected = false;
+		}
+		else if(res ==0){
+			userIsConnected = false;
+			logWriter->writeErrorConnectionHasClosed();
+		}else{
+			logWriter->writeReceivedSuccessfullyMessage(&recibido);
+		}
 		if (strcmp(messageType, kServerFullType) == 0) {
 			closeSocket(destinationSocket);
 			logWriter->writeCannotConnectDueToServerFull();
@@ -395,8 +355,11 @@ int main(int argc, char* argv[]) {
 	}
 	if(userIsConnected){
 		mensaje windowMsj, escenarioMsj;
-		readObjectMessage(destinationSocket, sizeof(windowMsj), &windowMsj);
-		readObjectMessage(destinationSocket, sizeof(escenarioMsj), &escenarioMsj);
+		actionMsj action;
+		Messenger().readActionMsj(destinationSocket, sizeof(actionMsj), &action);
+		Messenger().readMensaje(destinationSocket, sizeof(windowMsj), &windowMsj);
+		Messenger().readActionMsj(destinationSocket, sizeof(actionMsj), &action);
+		Messenger().readMensaje(destinationSocket, sizeof(escenarioMsj), &escenarioMsj);
 		initializeSDL(destinationSocket, windowMsj, escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
@@ -415,6 +378,7 @@ int main(int argc, char* argv[]) {
 	for(it = objects.begin(); it != objects.end(); it++){
 		(*it).destroyTexture();
 	}
+	cout<<"Cantidad total de bytes recibidos: "<<cantidadBytesRecibidos<<endl;
 	objects.clear();
 	SDL_DestroyRenderer(window->getRenderer());
 	window->renderer = NULL;

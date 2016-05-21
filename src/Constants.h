@@ -54,6 +54,21 @@ struct clientMsj {
 	char value[kLongChar];
 };
 
+struct actionMsj{
+	char action[kLongChar];
+};
+
+struct updateMsj{
+	int id;
+	int posX;
+	int posY;
+	int actualPhotogram;
+};
+
+struct deleteMsj{
+	int id;
+};
+
 struct mensaje {
 	char action[kLongChar];
 	int id;
