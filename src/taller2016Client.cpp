@@ -15,9 +15,11 @@
 #include <sys/time.h>
 #include "LogWriter.h"
 #include <errno.h>
+#include <SDL2/SDL.h>
 #include <chrono>
 #include "Window.h"
 #include "Object.h"
+#include "MenuPresenter.h"
 #include <mutex>
 #include "Client.h"
 #include "Avion.h"
@@ -163,7 +165,7 @@ int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
 	return recibidos;
 }
 
-void initializeSDL(int socketConnection, mensaje windowMsj, mensaje escenarioMsj){
+void initializeSDL(int socketConnection, mensaje windowMsj){
 	window = new Window("1942", windowMsj.height, windowMsj.width);
 	window->paint();
 }
@@ -282,7 +284,6 @@ void keepAlive(int socketConnection){
 
 void draw(){
 	mutexObjects.lock();
-	//SDL_RenderClear(window->getRenderer());
 	if(objects.size()>0){
 		window->paintAll(objects);
 	}
@@ -294,7 +295,6 @@ void resetAll(){
 	list<Object>::iterator it = objects.begin();
 	for(; it != objects.end(); it++){
 		(*it).destroyTexture();
-		//objects.erase(it);
 	}
 	objects.clear();
 }
@@ -317,12 +317,10 @@ void receiveFromSever(int socket){
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
 		}else if (strcmp(msj.action, "windowSize") == 0){
-			cout<<"Recibio window size"<<endl;
 			SDL_SetWindowSize(window->window, msj.width, msj.height);
 			window->setHeight(msj.height);
 			window->setWidth(msj.width);
 			window->paint();
-			cout<<"Seteo todo"<<endl;
 		}
 		mutexObjects.unlock();
 	}
@@ -370,10 +368,24 @@ int main(int argc, char* argv[]) {
 
 	int destinationSocket;
 	client = new Client();
+	mensaje windowMsj;
+	MenuPresenter graphicMenu;
+	bool sdlInitiated = false;
+	bool nameIsOk = false;
 	while(!userIsConnected){
 		destinationSocket = initializeClient(serverIP, serverPort);
-		cout << "Ingrese nombre para conectarse: ";
-		cin >> nombre;
+		readObjectMessage(destinationSocket, sizeof(windowMsj), &windowMsj);
+		if(!sdlInitiated){
+			initializeSDL(destinationSocket, windowMsj);
+			sdlInitiated = true;
+			graphicMenu.setRenderer(window->renderer);
+		}
+		graphicMenu.loadMenuBackground("fMenu.png",windowMsj.width, windowMsj.height);
+		if(graphicMenu.presentNameMenu())
+			nombre = graphicMenu.getPlayerName();
+		else
+			return 0;
+		cout<<"Nombre elegido: "<<graphicMenu.getPlayerName()<<endl;
 
 		clientMsj recibido;
 		clientMsj inicializacion;
@@ -385,25 +397,34 @@ int main(int argc, char* argv[]) {
 		char* messageType = readMsj(destinationSocket, sizeof(recibido), &recibido);
 		if (strcmp(messageType, kServerFullType) == 0) {
 			closeSocket(destinationSocket);
+			graphicMenu.setResultTexture(kServerFullType);
+			graphicMenu.paint();
+			graphicMenu.erasePlayerName();
 			logWriter->writeCannotConnectDueToServerFull();
 		}else if(strcmp(recibido.type,"error") == 0){
 			closeSocket(destinationSocket);
+			graphicMenu.setResultTexture(recibido.value);
+			graphicMenu.paint();
+			graphicMenu.erasePlayerName();
 			cout<< recibido.value << endl;
 		} else {
 			userIsConnected = true;
+			graphicMenu.setResultTexture("Conected!");
+			graphicMenu.paint();
 		}
+		sleep(2);
 	}
 	if(userIsConnected){
-		mensaje windowMsj, escenarioMsj;
-		readObjectMessage(destinationSocket, sizeof(windowMsj), &windowMsj);
+		mensaje escenarioMsj;
 		readObjectMessage(destinationSocket, sizeof(escenarioMsj), &escenarioMsj);
-		initializeSDL(destinationSocket, windowMsj, escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
+		graphicMenu.~MenuPresenter();
 		client->threadSDL = std::thread(handleEvents, destinationSocket);
 		client->threadListen = std::thread(receiveFromSever, destinationSocket);
 		client->threadKeepAlive = std::thread(keepAlive, destinationSocket);
 	}
+
 	while(userIsConnected){
 		draw();
 	}

@@ -37,7 +37,7 @@ public:
 	void setWidth(int width) {
 		this->width = width;
 	}
-
+	void clear();
 	void paintAll(list<Object> objects);
 	SDL_Window* window;
 	SDL_Renderer* renderer;

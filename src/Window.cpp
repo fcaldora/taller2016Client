@@ -37,6 +37,10 @@ void Window::paintAll(list<Object> objects){
 	}
 }
 
+void Window::clear(){
+	SDL_RenderClear(renderer);
+}
+
 Window::~Window() {
 	SDL_DestroyWindow(window);
 	SDL_RenderClear(this->renderer);
