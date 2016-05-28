@@ -21,6 +21,7 @@
 #include <mutex>
 #include "Client.h"
 #include "Avion.h"
+#include <SDL2/SDL_mixer.h>
 #include "Background.h"
 #define MAXHOSTNAME 256
 #define kClientTestFile "clienteTest.txt"
@@ -38,6 +39,8 @@ string nombre;
 Client* client;
 Window* window;
 Avion* avion;
+Mix_Music *gMusic = NULL;
+
 
 enum MenuOptionChoosedType {
 	MenuOptionChoosedTypeConnect = 1,
@@ -346,6 +349,65 @@ void syncronizingWithSever(int socket){
 }
 // END Only for Chano
 
+
+void initializeSDLSound() {
+    //Initialize SDL
+    if( SDL_Init( SDL_INIT_AUDIO ) < 0 )
+    {
+        printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+        //success = false;
+    }
+
+    //Initialize SDL_mixer
+   if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+   {
+       printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+       //success = false;
+   }
+
+   //Load music
+   gMusic = Mix_LoadMUS( "gameMusic.wav" );
+   if( gMusic == NULL )
+   {
+       printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+       //success = false;
+   }
+
+
+}
+
+void playMusic() {
+    if( Mix_PlayingMusic() == 0 ) {
+			//Play the music
+			Mix_PlayMusic( gMusic, -1 );
+			cout << "musica muscia asdfasdf" << endl;
+		}
+}
+
+void close()
+{
+    //Free loaded images
+    //gPromptTexture.free();
+
+    //Free the sound effects
+//    Mix_FreeChunk( gScratch );
+//    Mix_FreeChunk( gHigh );
+//    Mix_FreeChunk( gMedium );
+//    Mix_FreeChunk( gLow );
+//    gScratch = NULL;
+//    gHigh = NULL;
+//    gMedium = NULL;
+//    gLow = NULL;
+//
+    //Free the music
+    Mix_FreeMusic( gMusic );
+    gMusic = NULL;
+
+
+    //Quit SDL subsystems
+    Mix_Quit();
+}
+
 int main(int argc, char* argv[]) {
 	const char *fileName;
 	logWriter = new LogWriter();
@@ -400,6 +462,8 @@ int main(int argc, char* argv[]) {
 		initializeSDL(destinationSocket, windowMsj, escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
+		initializeSDLSound();
+		playMusic();
 		client->threadSDL = std::thread(handleEvents, destinationSocket);
 		client->threadListen = std::thread(receiveFromSever, destinationSocket);
 		client->threadKeepAlive = std::thread(keepAlive, destinationSocket);
@@ -429,3 +493,5 @@ int main(int argc, char* argv[]) {
 
 	return EXIT_SUCCESS;
 }
+
+
