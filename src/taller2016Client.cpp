@@ -40,6 +40,8 @@ Client* client;
 Window* window;
 Avion* avion;
 Mix_Music *gMusic = NULL;
+Mix_Chunk *fireSound = NULL;
+
 
 
 enum MenuOptionChoosedType {
@@ -59,6 +61,59 @@ void closeSocket(int socket) {
 	close(socket);
 	userIsConnected = false;
 }
+
+
+void initializeSDLSounds() {
+    //Initialize SDL
+    if( SDL_Init( SDL_INIT_AUDIO ) < 0 ) {
+        printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+    }
+    //Initialize SDL_mixer
+   if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 ) {
+       printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+   }
+
+   //Load music
+   gMusic = Mix_LoadMUS( "gameMusic.wav" );
+   if( gMusic == NULL ) {
+       printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+   }
+   fireSound = Mix_LoadWAV( "gun-gunshot-01.wav" );
+
+   //If there was a problem loading the sound effects
+   if (fireSound == NULL) {
+       printf( "Failed to load fire sound. SDL_mixer Error: %s\n", Mix_GetError() );
+   }
+
+
+
+}
+
+void playMusic() {
+    if( Mix_PlayingMusic() == 0 ) {
+		//Play the music
+		Mix_PlayMusic( gMusic, -1 );
+	}
+}
+
+void playFireSound() {
+	if( Mix_PlayChannel( -1, fireSound, 0 ) == -1 ) {
+		cout<< "Error playing fireSound"<< endl;
+	}
+}
+
+void closeSDLMixer() {
+    //Free the sound effects
+    Mix_FreeChunk( fireSound );
+    fireSound = NULL;
+
+    //Free the music
+    Mix_FreeMusic( gMusic );
+    gMusic = NULL;
+    //Quit SDL subsystems
+    Mix_Quit();
+}
+
 
 int initializeClient(string destinationIp, int port) {
 	struct sockaddr_in remoteSocketInfo;
@@ -218,6 +273,9 @@ void createObject(mensaje msj){
 	object.setPath(msj.imagePath);
 	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
+	//if (strcmp(msj.imagePath, "bullet.png") == 0) {
+	//	playFireSound();
+	//}
 }
 
 void handleEvents(int socket){
@@ -319,6 +377,8 @@ void receiveFromSever(int socket){
 			userIsConnected = false;
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
+		}else if (strcmp(msj.action, "bulletSound") == 0){
+			playFireSound();
 		}else if (strcmp(msj.action, "windowSize") == 0){
 			cout<<"Recibio window size"<<endl;
 			SDL_SetWindowSize(window->window, msj.width, msj.height);
@@ -349,64 +409,6 @@ void syncronizingWithSever(int socket){
 }
 // END Only for Chano
 
-
-void initializeSDLSound() {
-    //Initialize SDL
-    if( SDL_Init( SDL_INIT_AUDIO ) < 0 )
-    {
-        printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
-        //success = false;
-    }
-
-    //Initialize SDL_mixer
-   if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-   {
-       printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-       //success = false;
-   }
-
-   //Load music
-   gMusic = Mix_LoadMUS( "gameMusic.wav" );
-   if( gMusic == NULL )
-   {
-       printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
-       //success = false;
-   }
-
-
-}
-
-void playMusic() {
-    if( Mix_PlayingMusic() == 0 ) {
-			//Play the music
-			Mix_PlayMusic( gMusic, -1 );
-			cout << "musica muscia asdfasdf" << endl;
-		}
-}
-
-void close()
-{
-    //Free loaded images
-    //gPromptTexture.free();
-
-    //Free the sound effects
-//    Mix_FreeChunk( gScratch );
-//    Mix_FreeChunk( gHigh );
-//    Mix_FreeChunk( gMedium );
-//    Mix_FreeChunk( gLow );
-//    gScratch = NULL;
-//    gHigh = NULL;
-//    gMedium = NULL;
-//    gLow = NULL;
-//
-    //Free the music
-    Mix_FreeMusic( gMusic );
-    gMusic = NULL;
-
-
-    //Quit SDL subsystems
-    Mix_Quit();
-}
 
 int main(int argc, char* argv[]) {
 	const char *fileName;
@@ -462,7 +464,7 @@ int main(int argc, char* argv[]) {
 		initializeSDL(destinationSocket, windowMsj, escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
-		initializeSDLSound();
+		initializeSDLSounds();
 		playMusic();
 		client->threadSDL = std::thread(handleEvents, destinationSocket);
 		client->threadListen = std::thread(receiveFromSever, destinationSocket);
@@ -480,6 +482,7 @@ int main(int argc, char* argv[]) {
 		(*it).destroyTexture();
 	}
 	objects.clear();
+
 	SDL_DestroyRenderer(window->getRenderer());
 	window->renderer = NULL;
 	SDL_DestroyWindow(window->window);
@@ -487,7 +490,7 @@ int main(int argc, char* argv[]) {
 	IMG_Quit();
 	SDL_Quit();
 	close(client->getSocketConnection());
-
+	closeSDLMixer();
 	logWriter->writeUserDidTerminateApp();
 	prepareForExit(xmlLoader, parser, logWriter);
 
