@@ -467,6 +467,8 @@ int main(int argc, char* argv[]) {
 			graphicMenu.paint();
 			graphicMenu.erasePlayerName();
 			logWriter->writeCannotConnectDueToServerFull();
+			sleep(3);
+			return 0;
 		}else if(strcmp(recibido.type,"error") == 0){
 			closeSocket(destinationSocket);
 			graphicMenu.setResultTexture(recibido.value);
