@@ -41,17 +41,25 @@ string nombre;
 Client* client;
 Window* window;
 Avion* avion;
+int myPlaneId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
 
 
 
-enum MenuOptionChoosedType {
-	MenuOptionChoosedTypeConnect = 1,
-	MenuOptionChoosedTypeDisconnect = 2,
-	MenuOptionChoosedTypeExit = 3,
-	MenuOptionChoosedTypeCycle = 4
-};
+void putPlaneLastInTheList(){
+	list<Object>::iterator it = objects.begin();
+	bool found = false;
+	while(!found && it != objects.end()){
+		if((*it).getId() == myPlaneId)
+			found = true;
+		else
+			it++;
+	}
+	if(found){
+		objects.splice(objects.end(),objects,it);
+	}
+}
 
 void prepareForExit(XMLLoader *xmlLoader, XmlParser *xmlParser, LogWriter *logWriter) {
 	delete xmlLoader;
@@ -386,7 +394,9 @@ void receiveFromSever(int socket){
 			window->setHeight(msj.height);
 			window->setWidth(msj.width);
 			window->paint();
-		}
+		}else if(strcmp(msj.action, "sortPlane") == 0){
+			putPlaneLastInTheList();
+			}
 		mutexObjects.unlock();
 	}
 }
@@ -437,7 +447,6 @@ int main(int argc, char* argv[]) {
 	mensaje windowMsj;
 	MenuPresenter graphicMenu;
 	bool sdlInitiated = false;
-	bool nameIsOk = false;
 	while(!userIsConnected){
 		destinationSocket = initializeClient(serverIP, serverPort);
 		readObjectMessage(destinationSocket, sizeof(windowMsj), &windowMsj);
@@ -478,6 +487,7 @@ int main(int argc, char* argv[]) {
 		} else {
 			userIsConnected = true;
 			graphicMenu.setResultTexture("Conected!");
+			myPlaneId = atoi(recibido.id);
 			graphicMenu.paint();
 		}
 		sleep(2);
