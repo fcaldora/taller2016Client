@@ -328,6 +328,8 @@ void handleEvents(int socket){
 		if(button != 0 && button != 8){
 			usleep(10000);
 			sendMsj(socket, sizeof(msg), &msg);
+			if (button == 5)
+				button = 0;
 		}
 	}
 
