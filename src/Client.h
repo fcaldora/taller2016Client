@@ -29,6 +29,8 @@ public:
 	thread threadListen;
 	thread threadKeepAlive;
 
+	int clientID;
+
 private:
 	int socketConnection;
 

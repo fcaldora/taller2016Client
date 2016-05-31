@@ -37,6 +37,9 @@ using namespace std;
 #define kMessageTypeChar "CHAR"
 #define imageErrorPath "question.png"
 
+#define kCreateTeamType "create_team"
+#define kJoinTeamType "join_team"
+
 #define kServerFullType "server_full"
 #define kConnectionSuccessfulType "connection_successful"
 
@@ -52,6 +55,8 @@ struct clientMsj {
 	char id[kLongChar];
 	char type[kLongChar];
 	char value[kLongChar];
+	int clientID;
+	bool isFirstTimeLogin;
 };
 
 struct mensaje {
@@ -66,6 +71,21 @@ struct mensaje {
 	int actualPhotogram;
 	int photograms;
 	char errorMsj[kLongChar];
+};
+
+struct menuResponseMessage {
+	int id;
+	bool userCanCreateATeam;
+	char firstTeamName[kLongChar];
+	bool firstTeamIsAvailableToJoin;
+	char secondTeamName[kLongChar];
+	bool secondTeamIsAvailableToJoin;
+};
+
+struct menuRequestMessage {
+	int id;
+	char type[kLongChar]; // create_team || join_team
+	char teamName[kLongChar];
 };
 
 #endif /* CONSTANTS_H_ */
