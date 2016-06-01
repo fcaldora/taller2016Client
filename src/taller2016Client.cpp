@@ -44,6 +44,7 @@ Avion* avion;
 int myPlaneId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
+const Uint8* state = SDL_GetKeyboardState(NULL);
 
 
 
@@ -288,16 +289,55 @@ void createObject(mensaje msj){
 	//}
 }
 
-void handleEvents(int socket){
+void handleEvents(int socket) {
 	SDL_Event event;
-	int button;
 	clientMsj msg;
-	while(userIsConnected){
-		if(SDL_PollEvent( &event) == 1){
-			button = avion->processEvent(&event);
+	list<int> eventsToSend;
+	bool spaceBarPressed = false;
+
+	while (userIsConnected) {
+		usleep(10000);
+		SDL_PumpEvents();
+		if (state[SDL_SCANCODE_DOWN])
+			eventsToSend.push_back(1);
+		if (state[SDL_SCANCODE_UP])
+			eventsToSend.push_back(2);
+		if (state[SDL_SCANCODE_RIGHT])
+			eventsToSend.push_back(3);
+		if (state[SDL_SCANCODE_LEFT])
+			eventsToSend.push_back(4);
+		//if( state[SDL_SCANCODE_SPACE])
+		if (state[SDL_SCANCODE_R])
+			eventsToSend.push_back(6);
+		if (state[SDL_SCANCODE_A])
+			eventsToSend.push_back(7);
+		if (state[SDL_SCANCODE_X])
+			eventsToSend.push_back(8);
+		if (SDL_PollEvent(&event)) {
+			if (event.type == SDL_KEYDOWN) {
+				switch (event.key.keysym.sym) {
+				case SDLK_SPACE:
+					if (!spaceBarPressed) {
+						eventsToSend.push_back(5);
+						spaceBarPressed = true;
+					}
+					break;
+				}
+			} else if (event.type == SDL_KEYUP) {
+				switch (event.key.keysym.sym) {
+				case SDLK_SPACE:
+						spaceBarPressed = false;
+					break;
+				}
+			} else if (event.type == SDL_QUIT) {
+				eventsToSend.push_back(8);
+			}
 		}
-		strcpy(msg.id, nombre.c_str());
-		switch(button){
+
+		while (eventsToSend.size() > 0) {
+			int event = eventsToSend.front();
+			strcpy(msg.id, nombre.c_str());
+			switch (event) {
 			case 1:
 				strcpy(msg.type, "movement");
 				strcpy(msg.value, "ABJ");
@@ -332,15 +372,12 @@ void handleEvents(int socket){
 			case 9:
 				strcpy(msg.type, "close");
 				strcpy(msg.value, "CLOSE");
-		}
-		if(button != 0 && button != 8){
-			usleep(10000);
+			}
 			sendMsj(socket, sizeof(msg), &msg);
-			if (button == 5)
-				button = 0;
+			eventsToSend.pop_front();
 		}
+		usleep(10000);
 	}
-
 }
 
 void keepAlive(int socketConnection){
