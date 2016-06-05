@@ -80,6 +80,19 @@ int XmlParser::getServerPort() {
 	}
 }
 
+int XmlParser::getSoundsProperties() {
+	TiXmlHandle docHandle(&this->doc);
+	TiXmlElement* allSounds = docHandle.FirstChild(kClientTag).FirstChild(kConfigurationTag).FirstChild(kSoundsTag).ToElement();
+
+	if(allSounds)
+		return atoi(allSounds->GetText());
+	else{
+		cout<< "Error al obtener el puerto. XML mal escrito.";
+		//*archivoErrores<<"Error al obtener el puerto. XML mal escrito."<<endl;
+		return kDefaultPort;
+	}
+}
+
 string XmlParser::getServerIP(){
 	TiXmlHandle docHandle(&this->doc);
 	TiXmlElement* ipElem = docHandle.FirstChild(kClientTag).FirstChild(kConnectionTag).FirstChild(kIPTag).ToElement();

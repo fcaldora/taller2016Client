@@ -23,6 +23,7 @@ using namespace std;
 #define kConfigurationTag "configuracion"
 #define kLogLevelTag "nivelDeLog"
 #define kConnectionTag "conexion"
+#define kSoundsTag "allSounds"
 #define kIPTag "IP"
 #define kPortTag "puerto"
 #define kMessagesTag "mensajes"

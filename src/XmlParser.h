@@ -19,6 +19,7 @@ public:
 	int getMessage(clientMsj &mensaje, int nroMensaje);
 	int getServerPort();
 	int cantidadMensajes();
+	int getSoundsProperties();
 	string getServerIP();
 	LogLevelType getLogLevel();
 
