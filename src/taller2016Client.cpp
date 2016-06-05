@@ -41,6 +41,7 @@ Window* window;
 Avion* avion;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
+bool allSounds;
 
 
 
@@ -96,9 +97,17 @@ void playMusic() {
 	}
 }
 
-void playFireSound() {
-	if( Mix_PlayChannel( -1, fireSound, 0 ) == -1 ) {
-		cout<< "Error playing fireSound"<< endl;
+bool playSoundIsOn(mensaje msj) {
+	const char * nombreChar = nombre.c_str();
+	bool soundOfCurrentUser = (strcmp(msj.imagePath, nombreChar) == 0);
+	return(allSounds || soundOfCurrentUser);
+}
+
+void playFireSound(mensaje msj) {
+	if( playSoundIsOn(msj) ) {
+		if( Mix_PlayChannel( -1, fireSound, 0 ) == -1 ) {
+				cout<< "Error playing fireSound"<< endl;
+		}
 	}
 }
 
@@ -273,7 +282,7 @@ void createObject(mensaje msj){
 	object.setPath(msj.imagePath);
 	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
-	//if (strcmp(msj.imagePath, "bullet.png") == 0) {
+	//if cm {
 	//	playFireSound();
 	//}
 }
@@ -378,7 +387,7 @@ void receiveFromSever(int socket){
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
 		}else if (strcmp(msj.action, "bulletSound") == 0){
-			playFireSound();
+			playFireSound(msj);
 		}else if (strcmp(msj.action, "windowSize") == 0){
 			cout<<"Recibio window size"<<endl;
 			SDL_SetWindowSize(window->window, msj.width, msj.height);
@@ -431,6 +440,7 @@ int main(int argc, char* argv[]) {
 	logWriter->setLogLevel(parser->getLogLevel());
 	string serverIP = parser->getServerIP();
 	int serverPort = parser->getServerPort();
+	allSounds = parser->getSoundsProperties();
 
 	int destinationSocket;
 	client = new Client();
