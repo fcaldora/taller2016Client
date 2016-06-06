@@ -18,6 +18,7 @@
 #include <SDL2/SDL.h>
 #include <chrono>
 #include "Window.h"
+#include "Score.h"
 #include "Object.h"
 #include "MenuPresenter.h"
 #include <mutex>
@@ -38,6 +39,8 @@ XmlParser *parser;
 LogWriter *logWriter;
 bool userIsConnected;
 string nombre;
+Score* myScore;
+Score* theirScore;
 Client* client;
 Window* window;
 Avion* avion;
@@ -395,6 +398,8 @@ void draw(){
 	if(objects.size()>0){
 		window->paintAll(objects);
 	}
+	myScore->paint();
+	theirScore->paint();
 	mutexObjects.unlock();
 	window->paint();
 }
@@ -420,6 +425,14 @@ void receiveFromSever(int socket){
 			deleteObject(msj);
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
+		}else if(strcmp(msj.action, "score") == 0){
+			if(msj.id == myPlaneId){
+				myScore->setPoints(msj.photograms);
+				myScore->setPosition(msj.posX, msj.posY);
+			}else{
+				theirScore->setPoints(msj.photograms);
+				theirScore->setPosition(msj.posX, msj.posY);
+			}
 		}else if (strcmp(msj.action, "close")==0){
 			userIsConnected = false;
 		}else if (strcmp(msj.action, "reset") == 0){
@@ -534,6 +547,21 @@ int main(int argc, char* argv[]) {
 		readObjectMessage(destinationSocket, sizeof(escenarioMsj), &escenarioMsj);
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
+
+		myScore = new Score();
+		myScore->setRenderer(window->getRenderer());
+		myScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+		myScore->setName(graphicMenu.getPlayerName());
+		myScore->setPoints(0);
+		myScore->setPosition(0, 0);
+
+		theirScore = new Score();
+		theirScore->setRenderer(window->getRenderer());
+		theirScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+		theirScore->setName("player2");
+		theirScore->setPoints(0);
+		theirScore->setPosition(0, 0);
+
 		graphicMenu.~MenuPresenter();
 		initializeSDLSounds();
 		playMusic();
