@@ -1,0 +1,3 @@
+El archivo 'clienteTest.txt' no existe o es invalido. Se usara uno por defecto.
+El archivo 'clienteTest.txt' no existe o es invalido. Se usara uno por defecto.
+Hubo un error mientras el usuario se conectaba: Error en la IP. System DNS name resolution not configured properly.
