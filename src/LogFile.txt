@@ -1,0 +1,1 @@
+Se recibio satisfactoriamente el mensaje con ID:1 tipo:connection_ok valor:Client connected

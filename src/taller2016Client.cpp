@@ -48,8 +48,7 @@ int myPlaneId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
 const Uint8* state = SDL_GetKeyboardState(NULL);
-
-
+MenuPresenter graphicMenu;
 
 void putPlaneLastInTheList(){
 	list<Object>::iterator it = objects.begin();
@@ -213,6 +212,24 @@ char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 
 	logWriter->writeReceivedSuccessfullyMessage(msj);
 	return msj->type;
+}
+
+void readMenuMessage(int socket, int bytesToReceive ,menuResponseMessage *message){
+	int totalBytesReceived = 0;
+	int currentBytesReceived = 0;
+
+	while (totalBytesReceived < bytesToReceive){
+		currentBytesReceived = recv(socket, &message[totalBytesReceived], bytesToReceive - totalBytesReceived, MSG_WAITALL);
+		if (currentBytesReceived < 0){
+			userIsConnected = false;
+		}else if(currentBytesReceived == 0){
+				close(socket);
+				userIsConnected = false;
+				logWriter->writeErrorConnectionHasClosed();
+		}else{
+			totalBytesReceived += currentBytesReceived;
+		}
+	}
 }
 
 int readObjectMessage(int socket, int bytesARecibir, mensaje* msj){
@@ -451,24 +468,51 @@ void receiveFromSever(int socket){
 	}
 }
 
-// Only for Chano
-void syncronizingWithSever(int socket){
-	mensaje msj;
-	while(userIsConnected){
-		readObjectMessage(socket, sizeof(msj), &msj);
-		if(strcmp(msj.action, "create") == 0){
-			createObject(msj);
-		}else if(strcmp(msj.action, "draw") == 0){
-			return;
-		}else if(strcmp(msj.action, "delete") == 0){
-			return;
-		}else if(strcmp(msj.action, "path") == 0){
-			return;
+void presentCreateTeamOptionMenu(menuResponseMessage message, int destinationSocket) {
+	bool optionSelectedIsValid = false;
+	int optionSelected;
+	while (!optionSelectedIsValid) {
+		graphicMenu.presentCreatTeamOptionMenu();
+		cout << "Elija una opcion: " << endl;
+		cout << "1. Crear equipo" << endl;
+		if (message.firstTeamIsAvailableToJoin) {
+			graphicMenu.presentTextAtLine("2. Unirse al equipo ", 3, true);
+			cout << "2. Unirse al equipo " << message.firstTeamName << endl;
+		}
+
+		graphicMenu.presentCreateOrJoinTeamOptionMenu();
+		cin >> optionSelected;
+		if (optionSelected == 1) {
+			optionSelectedIsValid = true;
+			cout << "Ingrese el nombre del equipo :" << endl;
+			string teamName;
+			cin >> teamName;
+//			createTeamWithName(teamName, destinationSocket);
+		}
+		if (optionSelected == 2) {
+			if (message.firstTeamIsAvailableToJoin) {
+				optionSelectedIsValid = true;
+//				joinTeamWithName(message.firstTeamName, destinationSocket);
+			} else {
+				optionSelectedIsValid = false;
+			}
+		}
+		if (!optionSelectedIsValid) {
+			cout << "Opcion incorrecta" << endl;
 		}
 	}
 }
-// END Only for Chano
 
+void presentTeamMenu(int destinationSocket) {
+	menuResponseMessage message;
+	readMenuMessage(destinationSocket, sizeof(message), &message);
+	cout << message.userCanCreateATeam << " " << message.firstTeamIsAvailableToJoin << " " << message.secondTeamIsAvailableToJoin << endl;
+	if (message.userCanCreateATeam) {
+		presentCreateTeamOptionMenu(message, destinationSocket);
+	} else {
+//		presentOnlyJoinTeamOptionMenu(message, destinationSocket);
+	}
+}
 
 int main(int argc, char* argv[]) {
 	const char *fileName;
@@ -495,7 +539,6 @@ int main(int argc, char* argv[]) {
 	int destinationSocket;
 	client = new Client();
 	mensaje windowMsj;
-	MenuPresenter graphicMenu;
 	bool sdlInitiated = false;
 	while(!userIsConnected){
 		destinationSocket = initializeClient(serverIP, serverPort);
@@ -536,9 +579,10 @@ int main(int argc, char* argv[]) {
 			cout<< recibido.value << endl;
 		} else {
 			userIsConnected = true;
-			graphicMenu.setResultTexture("Conected!");
+			//graphicMenu.setResultTexture("Conected!");
 			myPlaneId = atoi(recibido.id);
-			graphicMenu.paint();
+			//graphicMenu.paint();
+			presentTeamMenu(destinationSocket);
 		}
 		sleep(2);
 	}

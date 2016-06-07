@@ -13,6 +13,7 @@
 #ifndef MENUPRESENTER_H_
 #define MENUPRESENTER_H_
 
+#include "Constants.h"
 
 using namespace std;
 
@@ -30,6 +31,10 @@ public:
 	void setInputTexture();
 	void setResultTexture(string result);
 	void erasePlayerName();
+	void presentCreatTeamOptionMenu();
+	void presentTextAtLine(string text, int line, bool addToList);
+	void presentCreateOrJoinTeamOptionMenu();
+
 	virtual ~MenuPresenter();
 
 private:
@@ -42,6 +47,15 @@ private:
 	int height;
 	int width;
 	int fontSize;
+
+	void clearTexts(bool clearTexts);
+	SDL_Texture* textureForText(string text);
+	void presentEnterYourNameText();
+
+	SDL_Rect rectForLine( int line, string text);
+	vector< map < string, string> > textsToPrint;
+	void addTotextsToPrint(string text, int line);
+	void addinputTextAtLine(string text, int line);
 };
 
 #endif /* MENUPRESENTER_H_ */

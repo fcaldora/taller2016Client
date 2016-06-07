@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <list>
 #include <vector>
+#include <map>
 
 using namespace std;
 
@@ -66,6 +67,21 @@ struct mensaje {
 	int actualPhotogram;
 	int photograms;
 	char errorMsj[kLongChar];
+};
+
+struct menuResponseMessage {
+	int id;
+	bool userCanCreateATeam;
+	char firstTeamName[kLongChar];
+	bool firstTeamIsAvailableToJoin;
+	char secondTeamName[kLongChar];
+	bool secondTeamIsAvailableToJoin;
+};
+
+struct menuRequestMessage {
+	int id;
+	char type[kLongChar]; // create_team || join_team
+	char teamName[kLongChar];
 };
 
 #endif /* CONSTANTS_H_ */
