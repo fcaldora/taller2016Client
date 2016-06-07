@@ -33,7 +33,9 @@ public:
 	void erasePlayerName();
 	void presentCreatTeamOptionMenu();
 	void presentTextAtLine(string text, int line, bool addToList);
-	void presentCreateOrJoinTeamOptionMenu();
+	string presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(vector <string> posibleOptions);
+	string presentCreateTeamOptionAndGetName();
+	void presentJoinTeamOptionMenu();
 
 	virtual ~MenuPresenter();
 

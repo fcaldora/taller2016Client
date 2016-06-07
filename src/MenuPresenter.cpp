@@ -25,40 +25,74 @@ SDL_Texture* MenuPresenter::getResultTexture(){
 	return this->resultMsg;
 }
 
-void MenuPresenter::presentCreateOrJoinTeamOptionMenu() {
-	bool end = false;
-	string playerOption;
-	cout << " asdfsdf " << endl;
+string MenuPresenter::presentCreateTeamOptionAndGetName() {
+	string userDidEnterName;
 	SDL_StartTextInput();
 
-	while (!end){
+	while (true){
 		SDL_Event event;
 		while (SDL_PollEvent(&event) != 0) {
 			if(event.type == SDL_KEYDOWN){
 				switch(event.key.keysym.sym){
 				case SDLK_RETURN:
-					end = true;
 					SDL_StopTextInput();
-					return;
+					return userDidEnterName;
 					break;
 				case SDLK_BACKSPACE:
-					if( playerOption.size() > 0){
-						playerOption.pop_back();
-						this->addinputTextAtLine(playerOption, 4);
+					if( userDidEnterName.size() > 0){
+						userDidEnterName.pop_back();
+						this->addinputTextAtLine(userDidEnterName, 6);
 					}
 					break;
 				}
 			}
 			switch(event.type){
 			case SDL_QUIT:
-				end = true;
 				SDL_StopTextInput();
-				return;
+				return "";
 				break;
 			case SDL_TEXTINPUT:
-				cout << " asdfsdf " << event.text.text << endl;
-				playerOption.append(event.text.text);
-				this->addinputTextAtLine(playerOption, 4);
+				userDidEnterName.append(event.text.text);
+				this->addinputTextAtLine(userDidEnterName, 6);
+				break;
+			}
+		}
+	}
+}
+
+string MenuPresenter::presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(vector <string> posibleOptions) {
+	string userDidSelectOption;
+	SDL_StartTextInput();
+
+	while (true){
+		SDL_Event event;
+		while (SDL_PollEvent(&event) != 0) {
+			if(event.type == SDL_KEYDOWN){
+				switch(event.key.keysym.sym){
+				case SDLK_RETURN:
+					for (string posibleOption : posibleOptions) {
+						if (strcmp(posibleOption.c_str(), userDidSelectOption.c_str()) == 0) {
+							SDL_StopTextInput();
+							return userDidSelectOption;
+						}
+					}
+					break;
+				case SDLK_BACKSPACE:
+					if( userDidSelectOption.size() > 0){
+						userDidSelectOption.pop_back();
+						this->addinputTextAtLine(userDidSelectOption, 4);
+					}
+					break;
+				}
+			}
+			switch(event.type){
+			case SDL_QUIT:
+				SDL_StopTextInput();
+				return "";
+				break;
+			case SDL_TEXTINPUT:
+				userDidSelectOption.append(event.text.text);
+				this->addinputTextAtLine(userDidSelectOption, 4);
 				break;
 			}
 		}
@@ -204,6 +238,11 @@ void MenuPresenter::presentCreatTeamOptionMenu() {
 
 	this->presentTextAtLine("Elije una opcion: ", 1, true);
 	this->presentTextAtLine("1. Crear equipo", 2, true);
+}
+
+void MenuPresenter::presentJoinTeamOptionMenu() {
+	this->clearTexts(true);
+	this->presentTextAtLine("Elije una opcion: ", 1, true);
 }
 
 void MenuPresenter::presentTextAtLine(string text, int line, bool addToList) {

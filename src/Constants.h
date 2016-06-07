@@ -38,6 +38,9 @@ using namespace std;
 #define kMessageTypeChar "CHAR"
 #define imageErrorPath "question.png"
 
+#define kCreateTeamType "create_team"
+#define kJoinTeamType "join_team"
+
 #define kServerFullType "server_full"
 #define kConnectionSuccessfulType "connection_successful"
 
@@ -53,6 +56,7 @@ struct clientMsj {
 	char id[kLongChar];
 	char type[kLongChar];
 	char value[kLongChar];
+	bool isFirstTimeLogin;
 };
 
 struct mensaje {

@@ -191,6 +191,21 @@ int sendMsj(int socket, int bytesAEnviar, clientMsj* mensaje){
 	return enviados;
 }
 
+void sendMenuMessage (int socket, int bytesToSend, menuRequestMessage *message) {
+	int bytesSent = 0;
+	int res = 0;
+
+	while(bytesSent < bytesToSend){
+		res = send(socket, &(message)[bytesSent], bytesToSend - bytesSent, MSG_WAITALL);
+		if (res == 0){
+			logWriter->writeErrorConnectionHasClosed();
+			userIsConnected = false;
+		}else if (res > 0){
+			bytesSent += res;
+		}
+	}
+}
+
 char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	int totalBytesRecibidos = 0;
 	int recibidos = 0;
@@ -468,49 +483,91 @@ void receiveFromSever(int socket){
 	}
 }
 
-void presentCreateTeamOptionMenu(menuResponseMessage message, int destinationSocket) {
-	bool optionSelectedIsValid = false;
-	int optionSelected;
-	while (!optionSelectedIsValid) {
-		graphicMenu.presentCreatTeamOptionMenu();
-		cout << "Elija una opcion: " << endl;
-		cout << "1. Crear equipo" << endl;
-		if (message.firstTeamIsAvailableToJoin) {
-			graphicMenu.presentTextAtLine("2. Unirse al equipo ", 3, true);
-			cout << "2. Unirse al equipo " << message.firstTeamName << endl;
-		}
+void createTeamWithName(string teamName, int destinationSocket) {
+	menuRequestMessage message;
+	message.id = 0;
+	strncpy(message.type, kCreateTeamType, kLongChar);
+	strncpy(message.teamName, teamName.c_str(), kLongChar);
+	sendMenuMessage(destinationSocket, sizeof(message), &message);
+}
 
-		graphicMenu.presentCreateOrJoinTeamOptionMenu();
-		cin >> optionSelected;
-		if (optionSelected == 1) {
-			optionSelectedIsValid = true;
-			cout << "Ingrese el nombre del equipo :" << endl;
-			string teamName;
-			cin >> teamName;
-//			createTeamWithName(teamName, destinationSocket);
-		}
-		if (optionSelected == 2) {
-			if (message.firstTeamIsAvailableToJoin) {
-				optionSelectedIsValid = true;
-//				joinTeamWithName(message.firstTeamName, destinationSocket);
-			} else {
-				optionSelectedIsValid = false;
-			}
-		}
-		if (!optionSelectedIsValid) {
-			cout << "Opcion incorrecta" << endl;
-		}
+void joinTeamWithName(char teamName[kLongChar], int destinationSocket) {
+	menuRequestMessage message;
+	message.id = 0;
+	strncpy(message.type, kJoinTeamType, kLongChar);
+	strncpy(message.teamName, teamName, kLongChar);
+	sendMenuMessage(destinationSocket, sizeof(message), &message);
+}
+
+void presentCreateTeamOptionMenu(menuResponseMessage message, int destinationSocket) {
+	string optionSelected;
+	graphicMenu.presentCreatTeamOptionMenu();
+	vector <string> posibleOptions;
+	posibleOptions.push_back("1");
+	if (message.firstTeamIsAvailableToJoin) {
+		string joinTeamText = "2. Unirse al equipo ";
+		joinTeamText += message.firstTeamName;
+		graphicMenu.presentTextAtLine(joinTeamText, 3, true);
+		posibleOptions.push_back("2");
+	}
+
+	optionSelected = graphicMenu.presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(posibleOptions);
+
+	if (atoi(optionSelected.c_str()) == 1) {
+		graphicMenu.presentTextAtLine(optionSelected, 4, true);
+		graphicMenu.presentTextAtLine("Ingrese el nombre del equipo: ", 5, true);
+
+		string teamName = graphicMenu.presentCreateTeamOptionAndGetName();
+		createTeamWithName(teamName, destinationSocket);
+	}
+	if (atoi(optionSelected.c_str()) == 2) {
+		joinTeamWithName(message.firstTeamName, destinationSocket);
+	}
+	graphicMenu.presentTextAtLine("Esperando a otros jugadores...", 7, true);
+
+}
+
+void presentOnlyJoinTeamOptionMenu(menuResponseMessage message, int destinationSocket) {
+//	bool optionSelectedIsValid = false;
+	string optionSelected;
+//	while (!optionSelectedIsValid) {
+	graphicMenu.presentJoinTeamOptionMenu();
+	vector <string> posibleOptions;
+//	cout << "Elija una opcion: " << endl;
+	if (message.firstTeamIsAvailableToJoin){
+		string joinTeamText = "1. Unirse al equipo ";
+		joinTeamText += message.firstTeamName;
+		graphicMenu.presentTextAtLine(joinTeamText, 2, true);
+		posibleOptions.push_back("1");
+	}
+//		cout << "1. Unirse al equipo "<< message.firstTeamName << endl;
+	if (message.secondTeamIsAvailableToJoin) {
+		string joinTeamText = "2. Unirse al equipo ";
+		joinTeamText += message.secondTeamName;
+		graphicMenu.presentTextAtLine(joinTeamText, 3, true);
+		posibleOptions.push_back("2");
+//		cout << "2. Unirse al equipo " << message.secondTeamName << endl;
+	}
+
+	optionSelected = graphicMenu.presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(posibleOptions);
+	graphicMenu.presentTextAtLine("Esperando a otros jugadores...", 5, true);
+
+	if (atoi(optionSelected.c_str()) == 1) {
+//		graphicMenu.presentTextAtLine("Esperando a otros jugadores...", 5, true);
+		joinTeamWithName(message.firstTeamName, destinationSocket);
+	}
+	if (atoi(optionSelected.c_str()) == 2) {
+		joinTeamWithName(message.secondTeamName, destinationSocket);
 	}
 }
 
 void presentTeamMenu(int destinationSocket) {
 	menuResponseMessage message;
 	readMenuMessage(destinationSocket, sizeof(message), &message);
-	cout << message.userCanCreateATeam << " " << message.firstTeamIsAvailableToJoin << " " << message.secondTeamIsAvailableToJoin << endl;
 	if (message.userCanCreateATeam) {
 		presentCreateTeamOptionMenu(message, destinationSocket);
 	} else {
-//		presentOnlyJoinTeamOptionMenu(message, destinationSocket);
+		presentOnlyJoinTeamOptionMenu(message, destinationSocket);
 	}
 }
 
@@ -579,10 +636,9 @@ int main(int argc, char* argv[]) {
 			cout<< recibido.value << endl;
 		} else {
 			userIsConnected = true;
-			//graphicMenu.setResultTexture("Conected!");
 			myPlaneId = atoi(recibido.id);
-			//graphicMenu.paint();
-			presentTeamMenu(destinationSocket);
+			if (recibido.isFirstTimeLogin)
+				presentTeamMenu(destinationSocket);
 		}
 		sleep(2);
 	}
