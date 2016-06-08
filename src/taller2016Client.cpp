@@ -446,7 +446,9 @@ void receiveFromSever(int socket){
 			window->paint();
 		}else if(strcmp(msj.action, "sortPlane") == 0){
 			putPlaneLastInTheList();
-			}
+		}else if(strcmp(msj.action, "theEnd") == 0){
+			userIsConnected = false;
+		}
 		mutexObjects.unlock();
 	}
 }
