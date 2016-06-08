@@ -19,6 +19,7 @@
 #include <chrono>
 #include "Window.h"
 #include "Score.h"
+#include "StageInfo.h"
 #include "Object.h"
 #include "MenuPresenter.h"
 #include <mutex>
@@ -47,6 +48,7 @@ Avion* avion;
 int myPlaneId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
+StageInfo* stageInfo;
 const Uint8* state = SDL_GetKeyboardState(NULL);
 
 
@@ -400,6 +402,8 @@ void draw(){
 	}
 	myScore->paint();
 	theirScore->paint();
+	if(stageInfo->paintNow())
+		stageInfo->paint();
 	mutexObjects.unlock();
 	window->paint();
 }
@@ -434,6 +438,8 @@ void receiveFromSever(int socket){
 				theirScore->setPosition(msj.posX, msj.posY);
 			}
 		}else if (strcmp(msj.action, "close")==0){
+			stageInfo->setHasToPaint(true);
+			stageInfo->setEndGameInfo();
 			userIsConnected = false;
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
@@ -446,8 +452,10 @@ void receiveFromSever(int socket){
 			window->paint();
 		}else if(strcmp(msj.action, "sortPlane") == 0){
 			putPlaneLastInTheList();
-		}else if(strcmp(msj.action, "theEnd") == 0){
-			userIsConnected = false;
+		}else if(strcmp(msj.action, "endStage") == 0){
+			stageInfo->setHasToPaint(true);
+			stageInfo->setPointsInfo(msj.photograms);
+			stageInfo->setStageInfo(msj.actualPhotogram);
 		}
 		mutexObjects.unlock();
 	}
@@ -564,6 +572,13 @@ int main(int argc, char* argv[]) {
 		theirScore->setPoints(0);
 		theirScore->setPosition(0, 0);
 
+		stageInfo = new StageInfo();
+		stageInfo->setRenderer(window->getRenderer());
+		stageInfo->setFontType("Caviar_Dreams_Bold.ttf", 20);
+		stageInfo->setStageInfo(0);
+		stageInfo->setPointsInfo(0);
+		stageInfo->setPositions(window->getWidth()/2 - 100, window->getHeight()/2 - 100);
+
 		graphicMenu.~MenuPresenter();
 		initializeSDLSounds();
 		playMusic();
@@ -578,7 +593,7 @@ int main(int argc, char* argv[]) {
 	client->threadSDL.join();
 	client->threadListen.join();
 	client->threadKeepAlive.join();
-
+	sleep(3); //3 segundos para que se vea el mensaje de fin de juego.
 	list<Object>::iterator it;
 	for(it = objects.begin(); it != objects.end(); it++){
 		(*it).destroyTexture();
