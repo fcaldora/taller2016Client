@@ -318,6 +318,8 @@ void handleEvents(int socket) {
 			eventsToSend.push_back(7);
 		if (state[SDL_SCANCODE_X])
 			eventsToSend.push_back(8);
+		if(state[SDL_SCANCODE_P])
+			eventsToSend.push_back(10);
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
@@ -377,6 +379,11 @@ void handleEvents(int socket) {
 			case 9:
 				strcpy(msg.type, "close");
 				strcpy(msg.value, "CLOSE");
+				break;
+			case 10:
+				strcpy(msg.type, "practiceOff");
+				strcpy(msg.value, "PRACTICEOFF");
+				break;
 			}
 			sendMsj(socket, sizeof(msg), &msg);
 			eventsToSend.pop_front();
