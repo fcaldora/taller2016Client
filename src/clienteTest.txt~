@@ -1,0 +1,28 @@
+<Cliente>
+	<configuracion>
+		<nivelDeLog>2</nivelDeLog>
+	</configuracion>
+	<conexion>
+		<IP>192.168.0.17</IP>
+		<puerto>8080</puerto>
+	</conexion>
+	<mensajes>
+		<mensaje>
+			<id>Mensaje1</id>
+			<tipo>INT</tipo>
+			<valor>gustavo</valor>
+		</mensaje>
+
+		<mensaje>
+			<id>Mensaje2</id>
+			<tipo>INT</tipo>
+			<valor>32</valor>
+		</mensaje>
+
+		<mensaje>
+			<id>Mensaje3</id>
+			<tipo>CHAR</tipo>
+			<valor>A</valor>
+		</mensaje>
+	</mensajes>
+</Cliente>
