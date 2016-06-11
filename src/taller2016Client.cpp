@@ -19,6 +19,7 @@
 #include <chrono>
 #include "Window.h"
 #include "Score.h"
+#include "StageInfo.h"
 #include "Object.h"
 #include "MenuPresenter.h"
 #include <mutex>
@@ -47,6 +48,7 @@ Avion* avion;
 int myPlaneId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
+StageInfo* stageInfo;
 const Uint8* state = SDL_GetKeyboardState(NULL);
 
 
@@ -316,6 +318,8 @@ void handleEvents(int socket) {
 			eventsToSend.push_back(7);
 		if (state[SDL_SCANCODE_X])
 			eventsToSend.push_back(8);
+		if(state[SDL_SCANCODE_P])
+			eventsToSend.push_back(10);
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
@@ -375,6 +379,11 @@ void handleEvents(int socket) {
 			case 9:
 				strcpy(msg.type, "close");
 				strcpy(msg.value, "CLOSE");
+				break;
+			case 10:
+				strcpy(msg.type, "practiceOff");
+				strcpy(msg.value, "PRACTICEOFF");
+				break;
 			}
 			sendMsj(socket, sizeof(msg), &msg);
 			eventsToSend.pop_front();
@@ -400,6 +409,8 @@ void draw(){
 	}
 	myScore->paint();
 	theirScore->paint();
+	if(stageInfo->paintNow())
+		stageInfo->paint();
 	mutexObjects.unlock();
 	window->paint();
 }
@@ -434,6 +445,8 @@ void receiveFromSever(int socket){
 				theirScore->setPosition(msj.posX, msj.posY);
 			}
 		}else if (strcmp(msj.action, "close")==0){
+			stageInfo->setHasToPaint(true);
+			stageInfo->setEndGameInfo();
 			userIsConnected = false;
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
@@ -446,7 +459,11 @@ void receiveFromSever(int socket){
 			window->paint();
 		}else if(strcmp(msj.action, "sortPlane") == 0){
 			putPlaneLastInTheList();
-			}
+		}else if(strcmp(msj.action, "endStage") == 0){
+			stageInfo->setHasToPaint(true);
+			stageInfo->setPointsInfo(msj.photograms);
+			stageInfo->setStageInfo(msj.actualPhotogram);
+		}
 		mutexObjects.unlock();
 	}
 }
@@ -562,6 +579,13 @@ int main(int argc, char* argv[]) {
 		theirScore->setPoints(0);
 		theirScore->setPosition(0, 0);
 
+		stageInfo = new StageInfo();
+		stageInfo->setRenderer(window->getRenderer());
+		stageInfo->setFontType("Caviar_Dreams_Bold.ttf", 20);
+		stageInfo->setStageInfo(0);
+		stageInfo->setPointsInfo(0);
+		stageInfo->setPositions(window->getWidth()/2 - 100, window->getHeight()/2 - 100);
+
 		graphicMenu.~MenuPresenter();
 		initializeSDLSounds();
 		playMusic();
@@ -576,7 +600,7 @@ int main(int argc, char* argv[]) {
 	client->threadSDL.join();
 	client->threadListen.join();
 	client->threadKeepAlive.join();
-
+	sleep(3); //3 segundos para que se vea el mensaje de fin de juego.
 	list<Object>::iterator it;
 	for(it = objects.begin(); it != objects.end(); it++){
 		(*it).destroyTexture();
