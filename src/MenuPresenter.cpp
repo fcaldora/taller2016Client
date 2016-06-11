@@ -41,7 +41,7 @@ bool MenuPresenter::presentNameMenu(){
 			paint();
 			if(event.type == SDL_KEYDOWN){
 				switch(event.key.keysym.sym){
-				case SDLK_KP_ENTER:
+				case SDLK_RETURN:
 					end = true;
 					SDL_StopTextInput();
 					return true;
