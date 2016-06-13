@@ -299,6 +299,7 @@ void handleEvents(int socket) {
 	clientMsj msg;
 	list<int> eventsToSend;
 	bool spaceBarPressed = false;
+	bool rPressed = false;
 
 	while (userIsConnected) {
 		usleep(10000);
@@ -311,9 +312,6 @@ void handleEvents(int socket) {
 			eventsToSend.push_back(3);
 		if (state[SDL_SCANCODE_LEFT])
 			eventsToSend.push_back(4);
-		//if( state[SDL_SCANCODE_SPACE])
-		if (state[SDL_SCANCODE_R])
-			eventsToSend.push_back(6);
 		if (state[SDL_SCANCODE_A])
 			eventsToSend.push_back(7);
 		if (state[SDL_SCANCODE_X])
@@ -323,18 +321,28 @@ void handleEvents(int socket) {
 		if (SDL_PollEvent(&event)) {
 			if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
-				case SDLK_SPACE:
-					if (!spaceBarPressed) {
-						eventsToSend.push_back(5);
-						spaceBarPressed = true;
-					}
-					break;
+					case SDLK_SPACE:
+						if (!spaceBarPressed) {
+							eventsToSend.push_back(5);
+							spaceBarPressed = true;
+						}
+						break;
+					case SDLK_r:
+						if (!rPressed) {
+							cout << "r presionada" << endl;
+							eventsToSend.push_back(6);
+							rPressed = true;
+						}
+						break;
 				}
 			} else if (event.type == SDL_KEYUP) {
 				switch (event.key.keysym.sym) {
-				case SDLK_SPACE:
+					case SDLK_SPACE:
 						spaceBarPressed = false;
-					break;
+						break;
+					case SDLK_r:
+						rPressed = false;
+						break;
 				}
 			} else if (event.type == SDL_QUIT) {
 				eventsToSend.push_back(8);
