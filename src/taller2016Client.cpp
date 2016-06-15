@@ -466,16 +466,17 @@ void resetAll(){
 	objects.clear();
 }
 
-void createTeamScore(string name,int number){
+void createTeamScore(mensaje msj){
 	Score* newClientScore = new Score();
 	newClientScore->setRenderer(window->getRenderer());
 	newClientScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+	string name(msj.imagePath);
 	cout << "CREANDO PUNTAJE PARA: "<< name << endl;
 	newClientScore->setName(name);
 	newClientScore->setPoints(0);
-	newClientScore->setPosition(window->getWidth() - window->getWidth()/number, window->getHeight() - window->getHeight()/8);
+	newClientScore->setPosition(window->getWidth() - window->getWidth()/(msj.id +1), window->getHeight() - window->getHeight()/8);
 	newClientScore->paint();
-	newClientScore->setTeamId(number);
+	newClientScore->setTeamId(msj.id);
 	scoresManager->addScore(newClientScore);
 }
 
@@ -536,6 +537,8 @@ void receiveFromSever(int socket){
 			teamId = msj.id;
 		}else if(strcmp(msj.action, "createScore") == 0){
 			createScore(msj);
+		}else if(strcmp(msj.action, "createTeamScore") == 0){
+			createTeamScore(msj);
 		}
 		mutexObjects.unlock();
 	}
@@ -547,11 +550,6 @@ void createTeamWithName(string teamName, int destinationSocket, bool firstTeamCr
 	strncpy(message.type, kCreateTeamType, kLongChar);
 	strncpy(message.teamName, teamName.c_str(), kLongChar);
 	sendMenuMessage(destinationSocket, sizeof(message), &message);
-	if(firstTeamCreated){
-		createTeamScore(teamName,2);
-	}else{
-		createTeamScore(teamName,1);
-	}
 }
 
 void joinTeamWithName(char teamName[kLongChar], int destinationSocket) {
@@ -636,6 +634,7 @@ void presentTeamMenu(int destinationSocket) {
 
 int main(int argc, char* argv[]) {
 	const char *fileName;
+	scoresManager = new ScoresManager();
 	logWriter = new LogWriter();
 	xmlLoader = new XMLLoader(logWriter);
 	userIsConnected = false;
@@ -716,7 +715,6 @@ int main(int argc, char* argv[]) {
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
 
-		scoresManager = new ScoresManager();
 
 		stageInfo = new StageInfo();
 		stageInfo->setRenderer(window->getRenderer());

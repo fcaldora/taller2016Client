@@ -20,11 +20,17 @@ ScoresManager::~ScoresManager() {
 void ScoresManager::setPoints(mensaje msj){
 	list<Score*>::iterator it;
 	for(it = scores.begin(); it != scores.end(); it++){
-		if((*it)->getId() == msj.actualPhotogram){
-			if(msj.id != 0){
+		if(msj.activeState){
+			if((*it)->getId() == msj.actualPhotogram){
+				if(msj.id != 0){
+					(*it)->setPoints(msj.photograms);
+				}else{
+					(*it)->setPoints(msj.width);
+				}
+			}
+		}else{
+			if((*it)->getTeamId() == msj.id){
 				(*it)->setPoints(msj.photograms);
-			}else{
-				(*it)->setPoints(msj.width);
 			}
 		}
 	}
