@@ -45,12 +45,13 @@ Score* theirScore;
 Client* client;
 Window* window;
 Avion* avion;
-int myPlaneId;
+int myPlaneId, teamId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
 StageInfo* stageInfo;
 const Uint8* state = SDL_GetKeyboardState(NULL);
 MenuPresenter graphicMenu;
+bool colaboration;
 
 void putPlaneLastInTheList(){
 	list<Object>::iterator it = objects.begin();
@@ -601,7 +602,8 @@ int main(int argc, char* argv[]) {
 	logWriter = new LogWriter();
 	xmlLoader = new XMLLoader(logWriter);
 	userIsConnected = false;
-
+	colaboration = false;
+	teamId = -1;
 	if(argc != 2){
 		fileName = kClientTestFile;
 		logWriter->writeUserDidnotEnterFileName();
@@ -662,11 +664,15 @@ int main(int argc, char* argv[]) {
 		} else {
 			userIsConnected = true;
 			myPlaneId = atoi(recibido.id);
-			if (recibido.isFirstTimeLogin)
+			if(strcmp(recibido.value, "colaboration") == 0){
+				colaboration = true;
+			}
+			if (recibido.isFirstTimeLogin && !colaboration)
 				presentTeamMenu(destinationSocket);
 		}
 		sleep(2);
 	}
+
 	if(userIsConnected){
 		mensaje escenarioMsj;
 		readObjectMessage(destinationSocket, sizeof(escenarioMsj), &escenarioMsj);
@@ -678,14 +684,16 @@ int main(int argc, char* argv[]) {
 		myScore->setFontType("Caviar_Dreams_Bold.ttf",10);
 		myScore->setName(graphicMenu.getPlayerName());
 		myScore->setPoints(0);
-		myScore->setPosition(0, 0);
+		myScore->setPosition(window->getHeight(), window->getHeight() - window->getHeight()/8);
+		//myScore->paint();
 
 		theirScore = new Score();
 		theirScore->setRenderer(window->getRenderer());
 		theirScore->setFontType("Caviar_Dreams_Bold.ttf",10);
 		theirScore->setName("player2");
 		theirScore->setPoints(0);
-		theirScore->setPosition(0, 0);
+		theirScore->setPosition(window->getWidth() - window->getWidth()/4, window->getWidth() - window->getWidth()/8);
+		//theirScore->paint();
 
 		stageInfo = new StageInfo();
 		stageInfo->setRenderer(window->getRenderer());
