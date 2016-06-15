@@ -488,7 +488,11 @@ void receiveFromSever(int socket){
 		}else if (strcmp(msj.action, "close")==0){
 			stageInfo->setHasToPaint(true);
 			stageInfo->setEndGameInfo();
+			graphicMenu.presentTheEnd();
+			graphicMenu.addTextToTheEnd("aca iria la info al final");
+			graphicMenu.addTextToTheEnd("Aca va otro renglon");
 			userIsConnected = false;
+			sleep(3); //PARA QUE SE VEA LA IMAGEN FINAL
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
 		}else if (strcmp(msj.action, "bulletSound") == 0){
@@ -704,7 +708,7 @@ int main(int argc, char* argv[]) {
 		stageInfo->setPointsInfo(0);
 		stageInfo->setPositions(window->getWidth()/2 - 100, window->getHeight()/2 - 100);
 
-		graphicMenu.~MenuPresenter();
+		//graphicMenu.~MenuPresenter();
 		initializeSDLSounds();
 		playMusic();
 		client->threadSDL = std::thread(handleEvents, destinationSocket);

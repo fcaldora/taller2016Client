@@ -36,11 +36,14 @@ public:
 	string presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(vector <string> posibleOptions);
 	string presentCreateTeamOptionAndGetName();
 	void presentJoinTeamOptionMenu();
+	void presentTheEnd();
+	void addTextToTheEnd(string text);
 
 	virtual ~MenuPresenter();
 
 private:
 	string playerName;
+	list<string> endLines;
 	SDL_Texture* inputTexture;
 	SDL_Texture* backgroundTexture;
 	SDL_Texture* resultMsg;
@@ -53,7 +56,7 @@ private:
 	void clearTexts(bool clearTexts);
 	SDL_Texture* textureForText(string text);
 	void presentEnterYourNameText();
-
+	SDL_Rect rectForTheEnd(int line, string text);
 	SDL_Rect rectForLine( int line, string text);
 	vector< map < string, string> > textsToPrint;
 	void addTotextsToPrint(string text, int line);

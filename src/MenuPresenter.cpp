@@ -312,6 +312,28 @@ void MenuPresenter::clearTexts(bool clearTexts) {
 	SDL_RenderPresent(renderer);
 }
 
+void MenuPresenter::presentTheEnd(){
+	SDL_SetRenderDrawColor( renderer, 0x00, 0x00,0x00,0x00);
+	SDL_RenderClear( renderer);
+	SDL_RenderPresent(renderer);
+}
+
+void MenuPresenter::addTextToTheEnd(string text){
+	SDL_Texture* texture = this->textureForText(text);
+	SDL_Rect rect = this->rectForTheEnd(this->endLines.size(), text);
+
+	SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+	SDL_RenderPresent(renderer);
+	endLines.push_back(text);
+}
+
+SDL_Rect MenuPresenter::rectForTheEnd(int line, string text){
+	SDL_Rect firstLineRect{width/8, height/8, text.size()*fontSize * 0.5, fontSize};
+	SDL_Rect rect {firstLineRect.x, firstLineRect.y + firstLineRect.h * (line - 1),firstLineRect.w, firstLineRect.h};
+	return rect;
+}
+
 
 MenuPresenter::~MenuPresenter() {
 	if(this->backgroundTexture != NULL)
