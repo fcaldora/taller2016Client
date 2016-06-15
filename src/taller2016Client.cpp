@@ -480,20 +480,18 @@ void createTeamScore(string name,int number){
 }
 
 void createScore(mensaje msj){
-	if(msj.id == 0){
-		Score* newClientScore = new Score();
-		newClientScore->setRenderer(window->getRenderer());
-		newClientScore->setFontType("Caviar_Dreams_Bold.ttf",10);
-		string name(msj.imagePath);
-		cout << "CREANDO PUNTAJE PARA: "<< name << endl;
-		newClientScore->setName(name);
-		newClientScore->setPoints(0);
-		newClientScore->setPosition(window->getWidth() - window->getWidth()/msj.id, window->getHeight() - window->getHeight()/8);
-		newClientScore->paint();
-		newClientScore->setId(msj.id);
-		newClientScore->setTeamId(msj.height);
-		scoresManager->addScore(newClientScore);
-	}
+	Score* newClientScore = new Score();
+	newClientScore->setRenderer(window->getRenderer());
+	newClientScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+	string name(msj.imagePath);
+	cout << "CREANDO PUNTAJE PARA: "<< name << endl;
+	newClientScore->setName(name);
+	newClientScore->setPoints(0);
+	newClientScore->setPosition(window->getWidth() - window->getWidth()/msj.id, window->getHeight() - window->getHeight()/8);
+	newClientScore->paint();
+	newClientScore->setId(msj.id);
+	newClientScore->setTeamId(msj.height);
+	scoresManager->addScore(newClientScore);
 }
 
 void receiveFromSever(int socket){
