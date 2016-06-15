@@ -25,7 +25,18 @@ public:
 	void setFontType(string fontPath, int fontSize);
 	void setRenderer(SDL_Renderer* windowRenderer);
 	virtual ~Score();
-
+	void setId(int id){
+		this->id = id;
+	}
+	int getId(){
+		return this->id;
+	}
+	void setTeamId(int id){
+		this->teamId = id;
+	}
+	int getTeamId(){
+		return this->teamId;
+	}
 private:
 	string clientName;
 	int points;
@@ -36,6 +47,8 @@ private:
 	SDL_Renderer* renderer;
 	int posX;
 	int posY;
+	int id;
+	int teamId;
 };
 
 #endif /* SCORE_H_ */

@@ -25,6 +25,7 @@
 #include <mutex>
 #include "Client.h"
 #include "Avion.h"
+#include "ScoresManager.h"
 #include <SDL2/SDL_mixer.h>
 #include "Background.h"
 #define MAXHOSTNAME 256
@@ -40,8 +41,10 @@ XmlParser *parser;
 LogWriter *logWriter;
 bool userIsConnected;
 string nombre;
-Score* myScore;
-Score* theirScore;
+//Score* myScore;
+//Score* theirScore;
+ScoresManager* scoresManager;
+//list<Score*>::iterator playersIt;
 Client* client;
 Window* window;
 Avion* avion;
@@ -448,8 +451,7 @@ void draw(){
 	if(objects.size()>0){
 		window->paintAll(objects);
 	}
-	myScore->paint();
-	theirScore->paint();
+	scoresManager->paint();
 	if(stageInfo->paintNow())
 		stageInfo->paint();
 	mutexObjects.unlock();
@@ -462,6 +464,36 @@ void resetAll(){
 		(*it).destroyTexture();
 	}
 	objects.clear();
+}
+
+void createTeamScore(string name,int number){
+	Score* newClientScore = new Score();
+	newClientScore->setRenderer(window->getRenderer());
+	newClientScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+	cout << "CREANDO PUNTAJE PARA: "<< name << endl;
+	newClientScore->setName(name);
+	newClientScore->setPoints(0);
+	newClientScore->setPosition(window->getWidth() - window->getWidth()/number, window->getHeight() - window->getHeight()/8);
+	newClientScore->paint();
+	newClientScore->setTeamId(number);
+	scoresManager->addScore(newClientScore);
+}
+
+void createScore(mensaje msj){
+	if(msj.id == 0){
+		Score* newClientScore = new Score();
+		newClientScore->setRenderer(window->getRenderer());
+		newClientScore->setFontType("Caviar_Dreams_Bold.ttf",10);
+		string name(msj.imagePath);
+		cout << "CREANDO PUNTAJE PARA: "<< name << endl;
+		newClientScore->setName(name);
+		newClientScore->setPoints(0);
+		newClientScore->setPosition(window->getWidth() - window->getWidth()/msj.id, window->getHeight() - window->getHeight()/8);
+		newClientScore->paint();
+		newClientScore->setId(msj.id);
+		newClientScore->setTeamId(msj.height);
+		scoresManager->addScore(newClientScore);
+	}
 }
 
 void receiveFromSever(int socket){
@@ -478,13 +510,7 @@ void receiveFromSever(int socket){
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
 		}else if(strcmp(msj.action, "score") == 0){
-			if(msj.id == teamId){
-				myScore->setPoints(msj.photograms);
-				//myScore->setPosition(msj.posX, msj.posY);
-			}else{
-				theirScore->setPoints(msj.photograms);
-				//theirScore->setPosition(msj.posX, msj.posY);
-			}
+				scoresManager->setPoints(msj);
 		}else if (strcmp(msj.action, "close")==0){
 			stageInfo->setHasToPaint(true);
 			stageInfo->setEndGameInfo();
@@ -510,17 +536,24 @@ void receiveFromSever(int socket){
 			stageInfo->setStageInfo(msj.actualPhotogram);
 		}else if(strcmp(msj.action, "teamId") == 0){
 			teamId = msj.id;
+		}else if(strcmp(msj.action, "createScore") == 0){
+			createScore(msj);
 		}
 		mutexObjects.unlock();
 	}
 }
 
-void createTeamWithName(string teamName, int destinationSocket) {
+void createTeamWithName(string teamName, int destinationSocket, bool firstTeamCreated) {
 	menuRequestMessage message;
 	message.id = 0;
 	strncpy(message.type, kCreateTeamType, kLongChar);
 	strncpy(message.teamName, teamName.c_str(), kLongChar);
 	sendMenuMessage(destinationSocket, sizeof(message), &message);
+	if(firstTeamCreated){
+		createTeamScore(teamName,2);
+	}else{
+		createTeamScore(teamName,1);
+	}
 }
 
 void joinTeamWithName(char teamName[kLongChar], int destinationSocket) {
@@ -550,7 +583,7 @@ void presentCreateTeamOptionMenu(menuResponseMessage message, int destinationSoc
 		graphicMenu.presentTextAtLine("Ingrese el nombre del equipo: ", 5, true);
 
 		string teamName = graphicMenu.presentCreateTeamOptionAndGetName();
-		createTeamWithName(teamName, destinationSocket);
+		createTeamWithName(teamName, destinationSocket, message.firstTeamIsAvailableToJoin);
 	}
 	if (atoi(optionSelected.c_str()) == 2) {
 		joinTeamWithName(message.firstTeamName, destinationSocket);
@@ -685,21 +718,7 @@ int main(int argc, char* argv[]) {
 		createObject(escenarioMsj);
 		logWriter->writeUserHasConnectedSuccessfully();
 
-		myScore = new Score();
-		myScore->setRenderer(window->getRenderer());
-		myScore->setFontType("Caviar_Dreams_Bold.ttf",10);
-		myScore->setName(graphicMenu.getPlayerName());
-		myScore->setPoints(0);
-		myScore->setPosition(window->getHeight(), window->getHeight() - window->getHeight()/8);
-		myScore->paint();
-
-		theirScore = new Score();
-		theirScore->setRenderer(window->getRenderer());
-		theirScore->setFontType("Caviar_Dreams_Bold.ttf",10);
-		theirScore->setName("player2");
-		theirScore->setPoints(0);
-		theirScore->setPosition(window->getWidth() - window->getWidth()/4, window->getWidth() - window->getWidth()/8);
-		theirScore->paint();
+		scoresManager = new ScoresManager();
 
 		stageInfo = new StageInfo();
 		stageInfo->setRenderer(window->getRenderer());
