@@ -488,7 +488,7 @@ void createScore(mensaje msj){
 	cout << "CREANDO PUNTAJE PARA: "<< name << endl;
 	newClientScore->setName(name);
 	newClientScore->setPoints(0);
-	newClientScore->setPosition(window->getWidth() - window->getWidth()/msj.id, window->getHeight() - window->getHeight()/8);
+	newClientScore->setPosition((window->getWidth()/6)*msj.id, window->getHeight() - window->getHeight()/8);
 	newClientScore->paint();
 	newClientScore->setId(msj.id);
 	newClientScore->setTeamId(msj.height);
