@@ -663,6 +663,7 @@ int main(int argc, char* argv[]) {
 			graphicMenu.paint();
 			graphicMenu.erasePlayerName();
 			cout<< recibido.value << endl;
+			sleep(2);
 		} else {
 			userIsConnected = true;
 			myPlaneId = atoi(recibido.id);
@@ -672,7 +673,6 @@ int main(int argc, char* argv[]) {
 			if (recibido.isFirstTimeLogin && !colaboration)
 				presentTeamMenu(destinationSocket);
 		}
-		sleep(2);
 	}
 
 	if(userIsConnected){
