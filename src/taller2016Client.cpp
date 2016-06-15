@@ -478,12 +478,12 @@ void receiveFromSever(int socket){
 		}else if(strcmp(msj.action, "path") == 0){
 			changePath(msj);
 		}else if(strcmp(msj.action, "score") == 0){
-			if(msj.id == myPlaneId){
+			if(msj.id == teamId){
 				myScore->setPoints(msj.photograms);
-				myScore->setPosition(msj.posX, msj.posY);
+				//myScore->setPosition(msj.posX, msj.posY);
 			}else{
 				theirScore->setPoints(msj.photograms);
-				theirScore->setPosition(msj.posX, msj.posY);
+				//theirScore->setPosition(msj.posX, msj.posY);
 			}
 		}else if (strcmp(msj.action, "close")==0){
 			stageInfo->setHasToPaint(true);
@@ -504,6 +504,8 @@ void receiveFromSever(int socket){
 			stageInfo->setHasToPaint(true);
 			stageInfo->setPointsInfo(msj.photograms);
 			stageInfo->setStageInfo(msj.actualPhotogram);
+		}else if(strcmp(msj.action, "teamId") == 0){
+			teamId = msj.id;
 		}
 		mutexObjects.unlock();
 	}
@@ -685,7 +687,7 @@ int main(int argc, char* argv[]) {
 		myScore->setName(graphicMenu.getPlayerName());
 		myScore->setPoints(0);
 		myScore->setPosition(window->getHeight(), window->getHeight() - window->getHeight()/8);
-		//myScore->paint();
+		myScore->paint();
 
 		theirScore = new Score();
 		theirScore->setRenderer(window->getRenderer());
@@ -693,7 +695,7 @@ int main(int argc, char* argv[]) {
 		theirScore->setName("player2");
 		theirScore->setPoints(0);
 		theirScore->setPosition(window->getWidth() - window->getWidth()/4, window->getWidth() - window->getWidth()/8);
-		//theirScore->paint();
+		theirScore->paint();
 
 		stageInfo = new StageInfo();
 		stageInfo->setRenderer(window->getRenderer());
