@@ -51,6 +51,7 @@ Avion* avion;
 int myPlaneId, teamId;
 Mix_Music *gMusic = NULL;
 Mix_Chunk *fireSound = NULL;
+Mix_Chunk *explosionSound = NULL;
 StageInfo* stageInfo;
 const Uint8* state = SDL_GetKeyboardState(NULL);
 MenuPresenter graphicMenu;
@@ -104,6 +105,14 @@ void initializeSDLSounds() {
        printf( "Failed to load fire sound. SDL_mixer Error: %s\n", Mix_GetError() );
    }
 
+   explosionSound = Mix_LoadWAV( "explosion.wav" );
+
+   //If there was a problem loading the sound effects
+   if (explosionSound == NULL) {
+       printf( "Failed to load explosion sound. SDL_mixer Error: %s\n", Mix_GetError() );
+   }
+
+
 
 
 }
@@ -121,9 +130,17 @@ void playFireSound() {
 	}
 }
 
+void playExplosionSound() {
+	if( Mix_PlayChannel( -1, explosionSound, 0 ) == -1 ) {
+		cout<< "Error playing explosion sound"<< endl;
+	}
+}
+
 void closeSDLMixer() {
     //Free the sound effects
     Mix_FreeChunk( fireSound );
+    fireSound = NULL;
+    Mix_FreeChunk( explosionSound );
     fireSound = NULL;
 
     //Free the music
@@ -325,9 +342,6 @@ void createObject(mensaje msj){
 	object.setPath(msj.imagePath);
 	object.loadImage(msj.imagePath, window->getRenderer(), msj.width, msj.height);
 	objects.push_back(object);
-	//if (strcmp(msj.imagePath, "bullet.png") == 0) {
-	//	playFireSound();
-	//}
 }
 
 void handleEvents(int socket) {
@@ -522,6 +536,8 @@ void receiveFromSever(int socket){
 			resetAll();
 		}else if (strcmp(msj.action, "bulletSound") == 0){
 			playFireSound();
+		}else if (strcmp(msj.action, "explosionSound") == 0){
+					playExplosionSound();
 		}else if (strcmp(msj.action, "windowSize") == 0){
 			SDL_SetWindowSize(window->window, msj.width, msj.height);
 			window->setHeight(msj.height);
