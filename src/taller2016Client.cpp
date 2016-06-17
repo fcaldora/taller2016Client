@@ -514,8 +514,8 @@ void receiveFromSever(int socket){
 			stageInfo->setHasToPaint(true);
 			stageInfo->setEndGameInfo();
 			graphicMenu.presentTheEnd();
-			graphicMenu.addTextToTheEnd("aca iria la info al final");
-			graphicMenu.addTextToTheEnd("Aca va otro renglon");
+			graphicMenu.addTextToTheEnd("El jugador de mayor puntaje es:");
+			graphicMenu.addTextToTheEnd(msj.imagePath);
 			userIsConnected = false;
 			sleep(3); //PARA QUE SE VEA LA IMAGEN FINAL
 		}else if (strcmp(msj.action, "reset") == 0){
