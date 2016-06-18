@@ -556,7 +556,7 @@ void presentCollaborationStats(int socket) {
 	strs << number;
 	string tempStr = strs.str();
 	char const *bestPlayerScore = tempStr.c_str();
-	char *str3 = " puntos."
+	char *str3 = " puntos.";
 
 	char *str4 = (char *) malloc(1 + strlen(str1)+ strlen(bestPlayerName)+ strlen(str2)+ strlen(bestPlayerScore) + strlen(str3));
 	strcpy(str4, str1);
