@@ -252,6 +252,42 @@ char* readMsj(int socket, int bytesARecibir, clientMsj* msj){
 	return msj->type;
 }
 
+void readStatsTypeMessage(int socket, int bytesToReceive, StatsTypeMessage *message) {
+	int totalBytesReceived = 0;
+	int currentBytesReceived = 0;
+
+	while (totalBytesReceived < bytesToReceive){
+		currentBytesReceived = recv(socket, &message[totalBytesReceived], bytesToReceive - totalBytesReceived, MSG_WAITALL);
+		if (currentBytesReceived < 0){
+			userIsConnected = false;
+		}else if(currentBytesReceived == 0){
+			close(socket);
+			userIsConnected = false;
+			logWriter->writeErrorConnectionHasClosed();
+		}else{
+			totalBytesReceived += currentBytesReceived;
+		}
+	}
+}
+
+void readCollaborationStatsMessage(int socket, int bytesToReceive, CollaborationStatsMessage *message) {
+	int totalBytesReceived = 0;
+	int currentBytesReceived = 0;
+
+	while (totalBytesReceived < bytesToReceive){
+		currentBytesReceived = recv(socket, &message[totalBytesReceived], bytesToReceive - totalBytesReceived, MSG_WAITALL);
+		if (currentBytesReceived < 0){
+			userIsConnected = false;
+		}else if(currentBytesReceived == 0){
+			close(socket);
+			userIsConnected = false;
+			logWriter->writeErrorConnectionHasClosed();
+		}else{
+			totalBytesReceived += currentBytesReceived;
+		}
+	}
+}
+
 void readMenuMessage(int socket, int bytesToReceive ,menuResponseMessage *message){
 	int totalBytesReceived = 0;
 	int currentBytesReceived = 0;
@@ -509,6 +545,30 @@ void createScore(mensaje msj){
 	scoresManager->addScore(newClientScore);
 }
 
+void presentCollaborationStats(int socket) {
+	CollaborationStatsMessage message;
+	readCollaborationStatsMessage(socket, sizeof(message), &message);
+	char *str1 = "El jugador de mayor puntaje es: ";
+	char *bestPlayerName = message.bestPlayerName;
+	char *str2 = " con: ";
+	int number = message.bestPlayerScore;
+	stringstream strs;
+	strs << number;
+	string tempStr = strs.str();
+	char const *bestPlayerScore = tempStr.c_str();
+	char *str3 = " puntos."
+
+	char *str4 = (char *) malloc(1 + strlen(str1)+ strlen(bestPlayerName)+ strlen(str2)+ strlen(bestPlayerScore) + strlen(str3));
+	strcpy(str4, str1);
+	strcat(str4, bestPlayerName);
+	strcat(str4, str2);
+	strcat(str4, bestPlayerScore);
+	strcat(str4, str3);
+
+	graphicMenu.addTextToTheEnd(str4);
+	free(str4);
+}
+
 void receiveFromSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
@@ -525,11 +585,17 @@ void receiveFromSever(int socket){
 		}else if(strcmp(msj.action, "score") == 0){
 				scoresManager->setPoints(msj);
 		}else if (strcmp(msj.action, "close")==0){
+			StatsTypeMessage message;
+			readStatsTypeMessage(socket, sizeof(message), &message);
 			stageInfo->setHasToPaint(true);
 			stageInfo->setEndGameInfo();
 			graphicMenu.presentTheEnd();
-			graphicMenu.addTextToTheEnd("El jugador de mayor puntaje es:");
-			graphicMenu.addTextToTheEnd(msj.imagePath);
+			if (strcmp(message.statType, "collaboration") == 0) {
+				presentCollaborationStats(socket);
+			} else {
+
+			}
+
 			userIsConnected = false;
 			sleep(3); //PARA QUE SE VEA LA IMAGEN FINAL
 		}else if (strcmp(msj.action, "reset") == 0){
@@ -605,32 +671,26 @@ void presentCreateTeamOptionMenu(menuResponseMessage message, int destinationSoc
 }
 
 void presentOnlyJoinTeamOptionMenu(menuResponseMessage message, int destinationSocket) {
-//	bool optionSelectedIsValid = false;
 	string optionSelected;
-//	while (!optionSelectedIsValid) {
 	graphicMenu.presentJoinTeamOptionMenu();
 	vector <string> posibleOptions;
-//	cout << "Elija una opcion: " << endl;
 	if (message.firstTeamIsAvailableToJoin){
 		string joinTeamText = "1. Unirse al equipo ";
 		joinTeamText += message.firstTeamName;
 		graphicMenu.presentTextAtLine(joinTeamText, 2, true);
 		posibleOptions.push_back("1");
 	}
-//		cout << "1. Unirse al equipo "<< message.firstTeamName << endl;
 	if (message.secondTeamIsAvailableToJoin) {
 		string joinTeamText = "2. Unirse al equipo ";
 		joinTeamText += message.secondTeamName;
 		graphicMenu.presentTextAtLine(joinTeamText, 3, true);
 		posibleOptions.push_back("2");
-//		cout << "2. Unirse al equipo " << message.secondTeamName << endl;
 	}
 
 	optionSelected = graphicMenu.presentCreateOrJoinTeamOptionMenuAndGetSelectedOption(posibleOptions);
 	graphicMenu.presentTextAtLine("Esperando a otros jugadores...", 5, true);
 
 	if (atoi(optionSelected.c_str()) == 1) {
-//		graphicMenu.presentTextAtLine("Esperando a otros jugadores...", 5, true);
 		joinTeamWithName(message.firstTeamName, destinationSocket);
 	}
 	if (atoi(optionSelected.c_str()) == 2) {

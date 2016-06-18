@@ -82,6 +82,17 @@ struct menuResponseMessage {
 	bool secondTeamIsAvailableToJoin;
 };
 
+struct StatsTypeMessage {
+	int id;
+	char statType[kLongChar]; //teams || collaboration
+};
+
+struct CollaborationStatsMessage {
+	int id;
+	char bestPlayerName[kLongChar];
+	int bestPlayerScore;
+};
+
 struct menuRequestMessage {
 	int id;
 	char type[kLongChar]; // create_team || join_team
