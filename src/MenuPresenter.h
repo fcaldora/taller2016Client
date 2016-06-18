@@ -38,6 +38,7 @@ public:
 	void presentJoinTeamOptionMenu();
 	void presentTheEnd();
 	void addTextToTheEnd(string text);
+	void presentTeamStatsForMessage(TeamsStatsMessage message);
 
 	virtual ~MenuPresenter();
 
@@ -61,6 +62,8 @@ private:
 	vector< map < string, string> > textsToPrint;
 	void addTotextsToPrint(string text, int line);
 	void addinputTextAtLine(string text, int line);
+	void presentPlayerStatsText(string playerName, int playerScore);
+	void presentTeamStatsText(string statsHeader ,string teamName, int teamScore);
 };
 
 #endif /* MENUPRESENTER_H_ */

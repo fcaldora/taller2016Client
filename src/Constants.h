@@ -38,6 +38,8 @@ using namespace std;
 #define kMessageTypeChar "CHAR"
 #define imageErrorPath "question.png"
 
+#define kNoTeamPlaceholder ":No_Team:"
+
 #define kCreateTeamType "create_team"
 #define kJoinTeamType "join_team"
 
@@ -91,6 +93,26 @@ struct CollaborationStatsMessage {
 	int id;
 	char bestPlayerName[kLongChar];
 	int bestPlayerScore;
+};
+
+struct TeamsStatsMessage {
+	int id;
+	char winnerTeamName[kLongChar];
+	int winnerTeamScore;
+	char firstPlayerNameOfWinnerTeam[kLongChar];
+	int firstPlayerScoreOfWinnerTeam;
+	char secondPlayerNameOfWinnerTeam[kLongChar];
+	int secondPlayerScoreOfWinnerTeam;
+	char thirdPlayerNameOfWinnerTeam[kLongChar];
+	int thirdPlayerScoreOfWinnerTeam;
+	char losserTeamName[kLongChar];
+	int losserTeamScore;
+	char firstPlayerNameOfLosserTeam[kLongChar];
+	int firstPlayerScoreOfLosserTeam;
+	char secondPlayerNameOfLosserTeam[kLongChar];
+	int secondPlayerScoreOfLosserTeam;
+	char thirdPlayerNameOfLosserTeam[kLongChar];
+	int thirdPlayerScoreOfLosserTeam;
 };
 
 struct menuRequestMessage {

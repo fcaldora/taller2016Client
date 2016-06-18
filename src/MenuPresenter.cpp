@@ -318,6 +318,46 @@ void MenuPresenter::presentTheEnd(){
 	SDL_RenderPresent(renderer);
 }
 
+void MenuPresenter::presentTeamStatsForMessage(TeamsStatsMessage message) {
+	this->presentTeamStatsText("ganador", message.winnerTeamName, message.winnerTeamScore);
+
+	this->presentPlayerStatsText(message.firstPlayerNameOfWinnerTeam, message.firstPlayerScoreOfWinnerTeam);
+	if (strcmp(message.secondPlayerNameOfWinnerTeam, kNoTeamPlaceholder) != 0) {
+		this->presentPlayerStatsText(message.secondPlayerNameOfWinnerTeam, message.secondPlayerScoreOfWinnerTeam);
+	}
+	if (strcmp(message.thirdPlayerNameOfWinnerTeam, kNoTeamPlaceholder) != 0) {
+		this->presentPlayerStatsText(message.thirdPlayerNameOfWinnerTeam, message.thirdPlayerScoreOfWinnerTeam);
+	}
+
+	this->presentTeamStatsText("perdedor", message.losserTeamName, message.losserTeamScore);
+	this->presentPlayerStatsText(message.firstPlayerNameOfLosserTeam, message.firstPlayerScoreOfLosserTeam);
+	if (strcmp(message.secondPlayerNameOfWinnerTeam, kNoTeamPlaceholder) != 0) {
+		this->presentPlayerStatsText(message.secondPlayerNameOfLosserTeam, message.secondPlayerScoreOfLosserTeam);
+	}
+	if (strcmp(message.thirdPlayerNameOfLosserTeam, kNoTeamPlaceholder) != 0) {
+		this->presentPlayerStatsText(message.thirdPlayerNameOfLosserTeam, message.thirdPlayerScoreOfLosserTeam);
+	}
+}
+
+void MenuPresenter::presentTeamStatsText(string statsHeader ,string teamName, int teamScore) {
+	string teamText = "El equipo ";
+	teamText.append(statsHeader);
+	teamText.append(" fue: ");
+	teamText.append(teamName);
+	teamText.append(" con: ");
+	teamText.append(std::to_string(teamScore));
+
+	this->addTextToTheEnd(teamText);
+}
+
+void MenuPresenter::presentPlayerStatsText(string playerName, int playerScore) {
+	string playerStatsText = "	El jugador ";
+	playerStatsText.append(playerName);
+	playerStatsText.append(" obtuvo ");
+	playerStatsText.append(std::to_string(playerScore));
+	this->addTextToTheEnd(playerStatsText);
+}
+
 void MenuPresenter::addTextToTheEnd(string text){
 	SDL_Texture* texture = this->textureForText(text);
 	SDL_Rect rect = this->rectForTheEnd(this->endLines.size(), text);

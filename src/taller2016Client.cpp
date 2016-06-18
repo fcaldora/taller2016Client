@@ -288,6 +288,24 @@ void readCollaborationStatsMessage(int socket, int bytesToReceive, Collaboration
 	}
 }
 
+void readTeamsStatsMessage(int socket, int bytesToReceive, TeamsStatsMessage *message) {
+	int totalBytesReceived = 0;
+	int currentBytesReceived = 0;
+
+	while (totalBytesReceived < bytesToReceive){
+		currentBytesReceived = recv(socket, &message[totalBytesReceived], bytesToReceive - totalBytesReceived, MSG_WAITALL);
+		if (currentBytesReceived < 0){
+			userIsConnected = false;
+		}else if(currentBytesReceived == 0){
+			close(socket);
+			userIsConnected = false;
+			logWriter->writeErrorConnectionHasClosed();
+		}else{
+			totalBytesReceived += currentBytesReceived;
+		}
+	}
+}
+
 void readMenuMessage(int socket, int bytesToReceive ,menuResponseMessage *message){
 	int totalBytesReceived = 0;
 	int currentBytesReceived = 0;
@@ -569,6 +587,12 @@ void presentCollaborationStats(int socket) {
 	free(str4);
 }
 
+void presentTeamsStats(int socket) {
+	TeamsStatsMessage message;
+	readTeamsStatsMessage(socket, sizeof(message), &message);
+	graphicMenu.presentTeamStatsForMessage(message);
+}
+
 void receiveFromSever(int socket){
 	mensaje msj;
 	while(userIsConnected){
@@ -593,11 +617,11 @@ void receiveFromSever(int socket){
 			if (strcmp(message.statType, "collaboration") == 0) {
 				presentCollaborationStats(socket);
 			} else {
-
+				presentTeamsStats(socket);
 			}
 
 			userIsConnected = false;
-			sleep(3); //PARA QUE SE VEA LA IMAGEN FINAL
+			sleep(5); //PARA QUE SE VEA LA IMAGEN FINAL
 		}else if (strcmp(msj.action, "reset") == 0){
 			resetAll();
 		}else if (strcmp(msj.action, "bulletSound") == 0){
